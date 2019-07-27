@@ -7,13 +7,27 @@ import subprocess
 import sys
 from prometheus_client import start_http_server, Gauge, Counter
 
+# INSTALLATION
+#   apt install -y python-pip python-setuptools
+#   pip install wheel 
+#   pip install prometheus_client
+
+# CONFIG
+#   counting transaction inputs and outputs requires that bitcoind is configured with txindex=1, which may also necessitate reindex=1 in bitcoin.conf
+#   set True or False, according to your bicoind configuration
+txindex_enabled = False
+
+#   when using a non-standard path for bitcoin.conf, set it here as cli argument (e.g. "-conf=/btc/bitcoin.conf") or leave empty
+bitcoind_conf = "-conf=/etc/bitcoin/bitcoin.conf"
+
+
 # Create Prometheus metrics to track bitcoind stats.
 BITCOIN_BLOCKS = Gauge('bitcoin_blocks', 'Block height')
 BITCOIN_DIFFICULTY = Gauge('bitcoin_difficulty', 'Difficulty')
 BITCOIN_PEERS = Gauge('bitcoin_peers', 'Number of peers')
 BITCOIN_HASHPS = Gauge('bitcoin_hashps', 'Estimated network hash rate per second')
 
-BITCOIN_ERRORS = Counter('bitcoin_errors', 'Number of errors detected')
+BITCOIN_WARNINGS = Counter('bitcoin_warnings', 'Number of warnings detected')
 BITCOIN_UPTIME = Gauge('bitcoin_uptime', 'Number of seconds the Bitcoin daemon has been running')
 
 BITCOIN_MEMPOOL_BYTES = Gauge('bitcoin_mempool_bytes', 'Size of mempool in bytes')
@@ -40,20 +54,30 @@ def find_bitcoin_cli():
 BITCOIN_CLI_PATH = str(find_bitcoin_cli())
 
 def bitcoin(cmd):
-    bitcoin = subprocess.Popen([BITCOIN_CLI_PATH, cmd], stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
+    args = [cmd]
+    if len(bitcoind_conf) > 0:
+      args = [bitcoind_conf] + args
+    bitcoin = subprocess.Popen([BITCOIN_CLI_PATH] + args, stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
     output = bitcoin.communicate()[0]
     return json.loads(output.decode('utf-8'))
 
 
 def bitcoincli(cmd):
-    bitcoin = subprocess.Popen([BITCOIN_CLI_PATH, cmd], stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
+    args = [cmd]
+    if len(bitcoind_conf) > 0:
+      args = [bitcoind_conf] + args
+    bitcoin = subprocess.Popen([BITCOIN_CLI_PATH] + args, stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
     output = bitcoin.communicate()[0]
     return output.decode('utf-8')
 
 
 def get_block(block_height):
+    args = ["getblock", block_height]
+    if len(bitcoind_conf) > 0:
+      args = [bitcoind_conf] + args
+
     try:
-        block = subprocess.check_output([BITCOIN_CLI_PATH, 'getblock', block_height])
+        block = subprocess.check_output([BITCOIN_CLI_PATH] + args)
     except Exception as e:
         print(e)
         print('Error: Can\'t retrieve block number ' + block_height + ' from bitcoind.')
@@ -62,8 +86,12 @@ def get_block(block_height):
 
 
 def get_raw_tx(txid):
+    args = ["getrawtransaction", txid, '1']
+    if len(bitcoind_conf) > 0:
+      args = [bitcoind_conf] + args
+
     try:
-        rawtx = subprocess.check_output([BITCOIN_CLI_PATH, 'getrawtransaction', txid, '1'])
+        rawtx = subprocess.check_output([BITCOIN_CLI_PATH])
     except Exception as e:
         print(e)
         print('Error: Can\'t retrieve raw transaction ' + txid + ' from bitcoind.')
@@ -75,20 +103,21 @@ def main():
     # Start up the server to expose the metrics.
     start_http_server(8334)
     while True:
-        info = bitcoin('getinfo')
+        blockchaininfo = bitcoin('getblockchaininfo')
+        networkinfo = bitcoin('getnetworkinfo')
         chaintips = len(bitcoin('getchaintips'))
         mempool = bitcoin('getmempoolinfo')
         nettotals = bitcoin('getnettotals')
-        latest_block = get_block(str(info['blocks']))
+        latest_block = get_block(str(blockchaininfo['bestblockhash']))
         hashps = float(bitcoincli('getnetworkhashps'))
 
-        BITCOIN_BLOCKS.set(info['blocks'])
-        BITCOIN_PEERS.set(info['connections'])
-        BITCOIN_DIFFICULTY.set(info['difficulty'])
+        BITCOIN_BLOCKS.set(blockchaininfo['blocks'])
+        BITCOIN_PEERS.set(networkinfo['connections'])
+        BITCOIN_DIFFICULTY.set(blockchaininfo['difficulty'])
         BITCOIN_HASHPS.set(hashps)
 
-        if info['errors']:
-            BITCOIN_ERRORS.inc()
+        if networkinfo['warnings']:
+            BITCOIN_WARNINGS.inc()
 
         BITCOIN_NUM_CHAINTIPS.set(chaintips)
 
@@ -102,9 +131,9 @@ def main():
             BITCOIN_LATEST_BLOCK_SIZE.set(latest_block['size'])
             BITCOIN_LATEST_BLOCK_TXS.set(len(latest_block['tx']))
             inputs, outputs = 0, 0
-            # counting transaction inputs and outputs requires txindex=1
-            # to be enabled, which may also necessitate reindex=1 in bitcoin.conf
-            for tx in latest_block['tx']:
+
+            if txindex_enabled:
+              for tx in latest_block['tx']:
 
                 if get_raw_tx(tx) is not None:
                     rawtx = get_raw_tx(tx)
