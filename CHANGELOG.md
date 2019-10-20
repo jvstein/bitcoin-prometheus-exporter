@@ -10,6 +10,7 @@ Changes to the project.
 
 ### Changed
 - Move changelog to separate file.
+- Make binding port configurable using `METRICS_PORT` environment variable.
 
 ### Fixed
 - Fix example commands in README.

@@ -68,6 +68,7 @@ BITCOIN_RPC_PORT = os.environ.get('BITCOIN_RPC_PORT', '8332')
 BITCOIN_RPC_USER = os.environ.get('BITCOIN_RPC_USER')
 BITCOIN_RPC_PASSWORD = os.environ.get('BITCOIN_RPC_PASSWORD')
 REFRESH_SECONDS = float(os.environ.get('REFRESH_SECONDS', '300'))
+METRICS_PORT = int(os.environ.get('METRICS_PORT', '8334'))
 
 
 def find_bitcoin_cli():
@@ -108,7 +109,7 @@ def get_block(block_hash):
 
 def main():
     # Start up the server to expose the metrics.
-    start_http_server(8334)
+    start_http_server(METRICS_PORT)
     while True:
         uptime = int(bitcoinrpc('uptime'))
         meminfo = bitcoinrpc('getmemoryinfo', 'stats')['locked']
