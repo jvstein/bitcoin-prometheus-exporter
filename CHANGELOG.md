@@ -3,6 +3,9 @@ Changes to the project.
 
 ## [Unreleased]
 
+
+## [0.2.0] - 2019-10-20
+
 ### Added
 - New metrics from [getmemoryinfo] with the `bitcoin_meminfo_` prefix.
 - `bitcoin_size_on_disk` metric with data from [getblockchaininfo].
@@ -42,4 +45,5 @@ as-is in the first commit.
 [python-bitcoinlib]: https://github.com/petertodd/python-bitcoinlib
 
 [Unreleased]: https://github.com/jvstein/bitcoin-prometheus-exporter/compare/v0.1.0...HEAD
+[0.2.0]: https://github.com/jvstein/bitcoin-prometheus-exporter/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/jvstein/bitcoin-prometheus-exporter/compare/5abac0a8c58a9c0a79c6493b3273e04fda7b050f...v0.1.0
