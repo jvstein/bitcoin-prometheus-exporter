@@ -1,0 +1,36 @@
+# Changelog
+Changes to the project.
+
+## [Unreleased]
+
+### Changed
+- Move changelog to separate file.
+
+### Fixed
+- Fix example commands in README.
+
+
+## [0.1.0] - 2019-07-27
+
+Initial release of project. Changes are relative to the [`bitcoin-monitor.md`][source-gist] gist, which was commited
+as-is in the first commit.
+
+[source-gist]: https://gist.github.com/ageis/a0623ae6ec9cfc72e5cb6bde5754ab1f
+
+### Added
+- Packaged for docker and modified to pull settings from environment variables.
+- `bitcoin_hashps_1` and `bitcoin_hashps_neg1` for estimated hash rates associated with only the last block and for all blocks with the same difficulty.
+- `bitcoin_est_smart_fee_*` metrics for estimated fee per kilobyte for confirmation within a number of blocks.
+- `bitcoin_latest_block_value` for the transaction value of the last block.
+- `bitcoin_server_version` and `bitcoin_protocol_version` to track upgrades of the bitcoin server.
+- `bitcoin_mempool_usage` metric.
+- `bitcoin_ban_created` and `bitcoin_banned_until` to track peer bans.
+
+### Changed
+- Use RPC calls using [python-bitcoinlib] instead of relying on the `bitcoin-cli` binary.
+- Remove need for `txindex=` to be set on the bitcoin server. Transactions are now pulled using the `getblock` call by setting `verbosity=2`.
+
+[python-bitcoinlib]: https://github.com/petertodd/python-bitcoinlib
+
+[Unreleased]: https://github.com/jvstein/bitcoin-prometheus-exporter/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/jvstein/bitcoin-prometheus-exporter/compare/5abac0a8c58a9c0a79c6493b3273e04fda7b050f...v0.1.0

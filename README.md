@@ -1,8 +1,13 @@
-# Bitcoin Node Exporter
+# Bitcoin Core Prometheus Exporter
 
-This is a docker image that runs a modified version of [`bitcoin-monitor.md`][source-gist]. The script has been modified
-to use the [python-bitcoinlib] library to directly call the RPC server, removing the need for the `bitcoin-cli` binary
-in the image.
+A [Prometheus] exporter for [Bitcoin Core] nodes written in python and packaged for running as a container.
+
+The main script is a modified version of [`bitcoin-monitor.md`][source-gist], updated to remove the need for the
+`bitcoin-cli` binary, packaged into a [Docker image][docker-image], and expanded to export additional metrics.
+
+[Bitcoin Core]: https://github.com/bitcoin/bitcoin
+[Prometheus]: https://github.com/prometheus/prometheus
+[docker-image]: https://hub.docker.com/r/jvstein/bitcoin-prometheus-exporter
 
 [source-gist]: https://gist.github.com/ageis/a0623ae6ec9cfc72e5cb6bde5754ab1f
 [python-bitcoinlib]: https://github.com/petertodd/python-bitcoinlib
@@ -18,15 +23,5 @@ docker run \
     jvstein/bitcoin-prometheus-exporter:latest
 ```
 
-
-# Change Log
-
-- Remove need for `txindex=` to be set on the bitcoin server. Transactions are now pulled using the `getblock` call by
-  setting `verbosity=2`.
-- Add additional `bitcoin_hashps_1` and `bitcoin_hashps_neg1` for estimated hash rates associated with only the last
-  block and for all blocks with the same difficulty.
-- Add `bitcoin_est_smart_fee_*` metrics for estimated fee per kilobyte for confirmation within a number of blocks.
-- Add `bitcoin_latest_block_value` for the transaction value of the last block.
-- Add `bitcoin_server_version` and `bitcoin_protocol_version` to track upgrades of the bitcoin server.
-- Add `bitcoin_mempool_usage` metric.
-- Add `bitcoin_ban_created` and `bitcoin_banned_until` to track peer bans.
+# [Change Log](CHANGELOG.md)
+See the [`CHANGELOG.md`](CHANGELOG.md) file for changes.
