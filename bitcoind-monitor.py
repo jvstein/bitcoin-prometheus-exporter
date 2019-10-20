@@ -44,6 +44,8 @@ BITCOIN_MEMPOOL_BYTES = Gauge('bitcoin_mempool_bytes', 'Size of mempool in bytes
 BITCOIN_MEMPOOL_SIZE = Gauge('bitcoin_mempool_size', 'Number of unconfirmed transactions in mempool')
 BITCOIN_MEMPOOL_USAGE = Gauge('bitcoin_mempool_usage', 'Total memory usage for the mempool')
 
+BITCOIN_LATEST_BLOCK_HEIGHT = Gauge('bitcoin_latest_block_height', 'Height or index of latest block')
+BITCOIN_LATEST_BLOCK_WEIGHT = Gauge('bitcoin_latest_block_weight', 'Weight of latest block according to BIP 141')
 BITCOIN_LATEST_BLOCK_SIZE = Gauge('bitcoin_latest_block_size', 'Size of latest block in bytes')
 BITCOIN_LATEST_BLOCK_TXS = Gauge('bitcoin_latest_block_txs', 'Number of transactions in latest block')
 
@@ -179,6 +181,8 @@ def main():
         if latest_block is not None:
             BITCOIN_LATEST_BLOCK_SIZE.set(latest_block['size'])
             BITCOIN_LATEST_BLOCK_TXS.set(len(latest_block['tx']))
+            BITCOIN_LATEST_BLOCK_HEIGHT.set(latest_block['height'])
+            BITCOIN_LATEST_BLOCK_WEIGHT.set(latest_block['weight'])
             inputs, outputs = 0, 0
             value = 0
             for tx in latest_block['tx']:

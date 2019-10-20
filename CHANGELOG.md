@@ -3,6 +3,10 @@ Changes to the project.
 
 ## [Unreleased]
 
+### Added
+- New `bitcoin_latest_block_weight` and `bitcoin_latest_block_height` metrics using value from [getblock].
+
+[getblock]: https://bitcoincore.org/en/doc/0.18.0/rpc/blockchain/getblock/
 
 ## [0.2.0] - 2019-10-20
 
