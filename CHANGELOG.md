@@ -6,6 +6,9 @@ Changes to the project.
 ### Added
 - New `bitcoin_latest_block_weight` and `bitcoin_latest_block_height` metrics using value from [getblock].
 
+### Changed
+- Update `bitcoin_latest_block_txs` to use the `nTx` value returned by [getblock] instead of `len(tx)`. No observed change in value.
+
 [getblock]: https://bitcoincore.org/en/doc/0.18.0/rpc/blockchain/getblock/
 
 ## [0.2.0] - 2019-10-20

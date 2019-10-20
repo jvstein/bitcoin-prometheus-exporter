@@ -180,7 +180,7 @@ def main():
 
         if latest_block is not None:
             BITCOIN_LATEST_BLOCK_SIZE.set(latest_block['size'])
-            BITCOIN_LATEST_BLOCK_TXS.set(len(latest_block['tx']))
+            BITCOIN_LATEST_BLOCK_TXS.set(latest_block['nTx'])
             BITCOIN_LATEST_BLOCK_HEIGHT.set(latest_block['height'])
             BITCOIN_LATEST_BLOCK_WEIGHT.set(latest_block['weight'])
             inputs, outputs = 0, 0
