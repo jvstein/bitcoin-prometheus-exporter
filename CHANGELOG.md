@@ -3,6 +3,11 @@ Changes to the project.
 
 ## [Unreleased]
 
+### Added
+- New metrics from [getmemoryinfo] with the `bitcoin_meminfo_` prefix.
+
+[getmemoryinfo]: https://bitcoincore.org/en/doc/0.18.0/rpc/control/getmemoryinfo/
+
 ### Changed
 - Move changelog to separate file.
 

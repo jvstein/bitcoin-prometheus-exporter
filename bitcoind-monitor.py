@@ -32,6 +32,13 @@ BITCOIN_ESTIMATED_SMART_FEE_20 = Gauge('bitcoin_est_smart_fee_20', 'Estimated sm
 BITCOIN_WARNINGS = Counter('bitcoin_warnings', 'Number of network or blockchain warnings detected')
 BITCOIN_UPTIME = Gauge('bitcoin_uptime', 'Number of seconds the Bitcoin daemon has been running')
 
+BITCOIN_MEMINFO_USED = Gauge('bitcoin_meminfo_used', 'Number of bytes used')
+BITCOIN_MEMINFO_FREE = Gauge('bitcoin_meminfo_free', 'Number of bytes available')
+BITCOIN_MEMINFO_TOTAL = Gauge('bitcoin_meminfo_total', 'Number of bytes managed')
+BITCOIN_MEMINFO_LOCKED = Gauge('bitcoin_meminfo_locked', 'Number of bytes locked')
+BITCOIN_MEMINFO_CHUNKS_USED = Gauge('bitcoin_meminfo_chunks_used', 'Number of allocated chunks')
+BITCOIN_MEMINFO_CHUNKS_FREE = Gauge('bitcoin_meminfo_chunks_free', 'Number of unused chunks')
+
 BITCOIN_MEMPOOL_BYTES = Gauge('bitcoin_mempool_bytes', 'Size of mempool in bytes')
 BITCOIN_MEMPOOL_SIZE = Gauge('bitcoin_mempool_size', 'Number of unconfirmed transactions in mempool')
 BITCOIN_MEMPOOL_USAGE = Gauge('bitcoin_mempool_usage', 'Total memory usage for the mempool')
@@ -104,6 +111,7 @@ def main():
     start_http_server(8334)
     while True:
         uptime = int(bitcoinrpc('uptime'))
+        meminfo = bitcoinrpc('getmemoryinfo', 'stats')['locked']
         blockchaininfo = bitcoinrpc('getblockchaininfo')
         networkinfo = bitcoinrpc('getnetworkinfo')
         chaintips = len(bitcoinrpc('getchaintips'))
@@ -141,6 +149,13 @@ def main():
             BITCOIN_WARNINGS.inc()
 
         BITCOIN_NUM_CHAINTIPS.set(chaintips)
+
+        BITCOIN_MEMINFO_USED.set(meminfo['used'])
+        BITCOIN_MEMINFO_FREE.set(meminfo['free'])
+        BITCOIN_MEMINFO_TOTAL.set(meminfo['total'])
+        BITCOIN_MEMINFO_LOCKED.set(meminfo['locked'])
+        BITCOIN_MEMINFO_CHUNKS_USED.set(meminfo['chunks_used'])
+        BITCOIN_MEMINFO_CHUNKS_FREE.set(meminfo['chunks_free'])
 
         BITCOIN_MEMPOOL_BYTES.set(mempool['bytes'])
         BITCOIN_MEMPOOL_SIZE.set(mempool['size'])
