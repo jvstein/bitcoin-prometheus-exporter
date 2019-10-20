@@ -4,6 +4,7 @@
 import json
 import time
 import os
+import signal
 import subprocess
 import sys
 
@@ -109,7 +110,14 @@ def get_block(block_hash):
     return block
 
 
+def sigterm_handler(signal, frame):
+    print('Received SIGTERM. Exiting.')
+    sys.exit(0)
+
+
 def main():
+    signal.signal(signal.SIGTERM, sigterm_handler)
+
     # Start up the server to expose the metrics.
     start_http_server(METRICS_PORT)
     while True:

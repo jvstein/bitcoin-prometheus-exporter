@@ -16,6 +16,7 @@ Changes to the project.
 
 ### Fixed
 - Fix example commands in README.
+- Handle SIGTERM gracefully to avoid later SIGKILL.
 
 
 ## [0.1.0] - 2019-07-27
