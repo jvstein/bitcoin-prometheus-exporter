@@ -61,6 +61,8 @@ BITCOIN_BANNED_UNTIL = Gauge('bitcoin_banned_until', 'Time the ban expires', lab
 BITCOIN_SERVER_VERSION = Gauge('bitcoin_server_version', 'The server version')
 BITCOIN_PROTOCOL_VERSION = Gauge('bitcoin_protocol_version', 'The protocol version of the server')
 
+BITCOIN_SIZE_ON_DISK = Gauge('bitcoin_size_on_disk', 'Estimated size of the block and undo files')
+
 
 BITCOIN_RPC_SCHEME = os.environ.get('BITCOIN_RPC_SCHEME', 'http')
 BITCOIN_RPC_HOST = os.environ.get('BITCOIN_RPC_HOST', 'localhost')
@@ -141,6 +143,7 @@ def main():
         BITCOIN_ESTIMATED_SMART_FEE_20.set(smartfee_20)
         BITCOIN_SERVER_VERSION.set(networkinfo['version'])
         BITCOIN_PROTOCOL_VERSION.set(networkinfo['protocolversion'])
+        BITCOIN_SIZE_ON_DISK.set(blockchaininfo['size_on_disk'])
 
         for ban in banned:
             BITCOIN_BAN_CREATED.labels(address=ban['address'], reason=ban['ban_reason']).set(ban['ban_created'])

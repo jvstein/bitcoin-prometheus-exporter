@@ -5,8 +5,10 @@ Changes to the project.
 
 ### Added
 - New metrics from [getmemoryinfo] with the `bitcoin_meminfo_` prefix.
+- `bitcoin_size_on_disk` metric with data from [getblockchaininfo].
 
 [getmemoryinfo]: https://bitcoincore.org/en/doc/0.18.0/rpc/control/getmemoryinfo/
+[getblockchaininfo]: https://bitcoincore.org/en/doc/0.18.0/rpc/blockchain/getblockchaininfo/
 
 ### Changed
 - Move changelog to separate file.
