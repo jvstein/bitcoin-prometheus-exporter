@@ -4,6 +4,7 @@ Changes to the project.
 ## [Unreleased]
 
 ### Added
+- Include explicit 3-clause BSD LICENSE.
 - New `bitcoin_latest_block_weight` and `bitcoin_latest_block_height` metrics using value from [getblock].
 
 ### Changed
