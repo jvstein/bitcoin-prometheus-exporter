@@ -10,6 +10,9 @@ Changes to the project.
 ### Changed
 - Update `bitcoin_latest_block_txs` to use the `nTx` value returned by [getblock] instead of `len(tx)`. No observed change in value.
 
+### Removed
+- Dead code cleanup (`find_bitcoin_cli` and `BITCOIN_CLI_PATH`).
+
 [getblock]: https://bitcoincore.org/en/doc/0.18.0/rpc/blockchain/getblock/
 
 ## [0.2.0] - 2019-10-20

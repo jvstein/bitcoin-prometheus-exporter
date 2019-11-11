@@ -76,16 +76,6 @@ REFRESH_SECONDS = float(os.environ.get('REFRESH_SECONDS', '300'))
 METRICS_PORT = int(os.environ.get('METRICS_PORT', '8334'))
 
 
-def find_bitcoin_cli():
-    if sys.version_info[0] < 3:
-        from whichcraft import which
-    if sys.version_info[0] >= 3:
-        from shutil import which
-    return which('bitcoin-cli')
-
-BITCOIN_CLI_PATH = str(find_bitcoin_cli())
-
-
 def bitcoinrpc(*args):
     host = BITCOIN_RPC_HOST
     if BITCOIN_RPC_USER and BITCOIN_RPC_PASSWORD:
