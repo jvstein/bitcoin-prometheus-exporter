@@ -6,6 +6,7 @@ Changes to the project.
 ### Added
 - Include explicit 3-clause BSD LICENSE.
 - New `bitcoin_latest_block_weight` and `bitcoin_latest_block_height` metrics using value from [getblock].
+- Include my rudimentary dashboard.
 
 ### Changed
 - Update `bitcoin_latest_block_txs` to use the `nTx` value returned by [getblock] instead of `len(tx)`. No observed change in value.
