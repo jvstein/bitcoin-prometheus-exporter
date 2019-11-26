@@ -3,6 +3,8 @@ Changes to the project.
 
 ## [Unreleased]
 
+## [0.3.0] - 2019-11-25
+
 ### Added
 - Include explicit 3-clause BSD LICENSE.
 - New `bitcoin_latest_block_weight` and `bitcoin_latest_block_height` metrics using value from [getblock].
@@ -56,6 +58,7 @@ as-is in the first commit.
 
 [python-bitcoinlib]: https://github.com/petertodd/python-bitcoinlib
 
-[Unreleased]: https://github.com/jvstein/bitcoin-prometheus-exporter/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/jvstein/bitcoin-prometheus-exporter/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/jvstein/bitcoin-prometheus-exporter/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/jvstein/bitcoin-prometheus-exporter/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/jvstein/bitcoin-prometheus-exporter/compare/5abac0a8c58a9c0a79c6493b3273e04fda7b050f...v0.1.0
