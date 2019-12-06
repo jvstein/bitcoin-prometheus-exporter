@@ -13,7 +13,7 @@ try:
 except ImportError:
     from urllib import quote
 
-from bitcoin.rpc import Proxy
+from bitcoin.rpc import InWarmupError, Proxy
 from prometheus_client import start_http_server, Gauge, Counter
 
 
@@ -102,6 +102,83 @@ def get_block(block_hash):
     return block
 
 
+def refresh_metrics():
+    uptime = int(bitcoinrpc('uptime'))
+    meminfo = bitcoinrpc('getmemoryinfo', 'stats')['locked']
+    blockchaininfo = bitcoinrpc('getblockchaininfo')
+    networkinfo = bitcoinrpc('getnetworkinfo')
+    chaintips = len(bitcoinrpc('getchaintips'))
+    mempool = bitcoinrpc('getmempoolinfo')
+    nettotals = bitcoinrpc('getnettotals')
+    latest_block = get_block(str(blockchaininfo['bestblockhash']))
+    hashps_120 = float(bitcoinrpc('getnetworkhashps', 120))  # 120 is the default
+    hashps_neg1 = float(bitcoinrpc('getnetworkhashps', -1))
+    hashps_1 = float(bitcoinrpc('getnetworkhashps', 1))
+    smartfee_2 = bitcoinrpc('estimatesmartfee', 2)['feerate']
+    smartfee_3 = bitcoinrpc('estimatesmartfee', 3)['feerate']
+    smartfee_5 = bitcoinrpc('estimatesmartfee', 5)['feerate']
+    smartfee_20 = bitcoinrpc('estimatesmartfee', 20)['feerate']
+    banned = bitcoinrpc('listbanned')
+
+    BITCOIN_UPTIME.set(uptime)
+    BITCOIN_BLOCKS.set(blockchaininfo['blocks'])
+    BITCOIN_PEERS.set(networkinfo['connections'])
+    BITCOIN_DIFFICULTY.set(blockchaininfo['difficulty'])
+    BITCOIN_HASHPS.set(hashps_120)
+    BITCOIN_HASHPS_NEG1.set(hashps_neg1)
+    BITCOIN_HASHPS_1.set(hashps_1)
+    BITCOIN_ESTIMATED_SMART_FEE_2.set(smartfee_2)
+    BITCOIN_ESTIMATED_SMART_FEE_3.set(smartfee_3)
+    BITCOIN_ESTIMATED_SMART_FEE_5.set(smartfee_5)
+    BITCOIN_ESTIMATED_SMART_FEE_20.set(smartfee_20)
+    BITCOIN_SERVER_VERSION.set(networkinfo['version'])
+    BITCOIN_PROTOCOL_VERSION.set(networkinfo['protocolversion'])
+    BITCOIN_SIZE_ON_DISK.set(blockchaininfo['size_on_disk'])
+
+    for ban in banned:
+        BITCOIN_BAN_CREATED.labels(address=ban['address'], reason=ban['ban_reason']).set(ban['ban_created'])
+        BITCOIN_BANNED_UNTIL.labels(address=ban['address'], reason=ban['ban_reason']).set(ban['banned_until'])
+
+    if networkinfo['warnings']:
+        BITCOIN_WARNINGS.inc()
+
+    BITCOIN_NUM_CHAINTIPS.set(chaintips)
+
+    BITCOIN_MEMINFO_USED.set(meminfo['used'])
+    BITCOIN_MEMINFO_FREE.set(meminfo['free'])
+    BITCOIN_MEMINFO_TOTAL.set(meminfo['total'])
+    BITCOIN_MEMINFO_LOCKED.set(meminfo['locked'])
+    BITCOIN_MEMINFO_CHUNKS_USED.set(meminfo['chunks_used'])
+    BITCOIN_MEMINFO_CHUNKS_FREE.set(meminfo['chunks_free'])
+
+    BITCOIN_MEMPOOL_BYTES.set(mempool['bytes'])
+    BITCOIN_MEMPOOL_SIZE.set(mempool['size'])
+    BITCOIN_MEMPOOL_USAGE.set(mempool['usage'])
+
+    BITCOIN_TOTAL_BYTES_RECV.set(nettotals['totalbytesrecv'])
+    BITCOIN_TOTAL_BYTES_SENT.set(nettotals['totalbytessent'])
+
+    if latest_block is not None:
+        BITCOIN_LATEST_BLOCK_SIZE.set(latest_block['size'])
+        BITCOIN_LATEST_BLOCK_TXS.set(latest_block['nTx'])
+        BITCOIN_LATEST_BLOCK_HEIGHT.set(latest_block['height'])
+        BITCOIN_LATEST_BLOCK_WEIGHT.set(latest_block['weight'])
+        inputs, outputs = 0, 0
+        value = 0
+        for tx in latest_block['tx']:
+            i = len(tx['vin'])
+            inputs += i
+            o = len(tx['vout'])
+            outputs += o
+            value += sum(o["value"] for o in tx['vout'])
+
+        BITCOIN_LATEST_BLOCK_INPUTS.set(inputs)
+        BITCOIN_LATEST_BLOCK_OUTPUTS.set(outputs)
+        BITCOIN_LATEST_BLOCK_VALUE.set(value)
+
+    time.sleep(REFRESH_SECONDS)
+
+
 def sigterm_handler(signal, frame):
     print('Received SIGTERM. Exiting.')
     sys.exit(0)
@@ -113,79 +190,10 @@ def main():
     # Start up the server to expose the metrics.
     start_http_server(METRICS_PORT)
     while True:
-        uptime = int(bitcoinrpc('uptime'))
-        meminfo = bitcoinrpc('getmemoryinfo', 'stats')['locked']
-        blockchaininfo = bitcoinrpc('getblockchaininfo')
-        networkinfo = bitcoinrpc('getnetworkinfo')
-        chaintips = len(bitcoinrpc('getchaintips'))
-        mempool = bitcoinrpc('getmempoolinfo')
-        nettotals = bitcoinrpc('getnettotals')
-        latest_block = get_block(str(blockchaininfo['bestblockhash']))
-        hashps_120 = float(bitcoinrpc('getnetworkhashps', 120))  # 120 is the default
-        hashps_neg1 = float(bitcoinrpc('getnetworkhashps', -1))
-        hashps_1 = float(bitcoinrpc('getnetworkhashps', 1))
-        smartfee_2 = bitcoinrpc('estimatesmartfee', 2)['feerate']
-        smartfee_3 = bitcoinrpc('estimatesmartfee', 3)['feerate']
-        smartfee_5 = bitcoinrpc('estimatesmartfee', 5)['feerate']
-        smartfee_20 = bitcoinrpc('estimatesmartfee', 20)['feerate']
-        banned = bitcoinrpc('listbanned')
-
-        BITCOIN_UPTIME.set(uptime)
-        BITCOIN_BLOCKS.set(blockchaininfo['blocks'])
-        BITCOIN_PEERS.set(networkinfo['connections'])
-        BITCOIN_DIFFICULTY.set(blockchaininfo['difficulty'])
-        BITCOIN_HASHPS.set(hashps_120)
-        BITCOIN_HASHPS_NEG1.set(hashps_neg1)
-        BITCOIN_HASHPS_1.set(hashps_1)
-        BITCOIN_ESTIMATED_SMART_FEE_2.set(smartfee_2)
-        BITCOIN_ESTIMATED_SMART_FEE_3.set(smartfee_3)
-        BITCOIN_ESTIMATED_SMART_FEE_5.set(smartfee_5)
-        BITCOIN_ESTIMATED_SMART_FEE_20.set(smartfee_20)
-        BITCOIN_SERVER_VERSION.set(networkinfo['version'])
-        BITCOIN_PROTOCOL_VERSION.set(networkinfo['protocolversion'])
-        BITCOIN_SIZE_ON_DISK.set(blockchaininfo['size_on_disk'])
-
-        for ban in banned:
-            BITCOIN_BAN_CREATED.labels(address=ban['address'], reason=ban['ban_reason']).set(ban['ban_created'])
-            BITCOIN_BANNED_UNTIL.labels(address=ban['address'], reason=ban['ban_reason']).set(ban['banned_until'])
-
-        if networkinfo['warnings']:
-            BITCOIN_WARNINGS.inc()
-
-        BITCOIN_NUM_CHAINTIPS.set(chaintips)
-
-        BITCOIN_MEMINFO_USED.set(meminfo['used'])
-        BITCOIN_MEMINFO_FREE.set(meminfo['free'])
-        BITCOIN_MEMINFO_TOTAL.set(meminfo['total'])
-        BITCOIN_MEMINFO_LOCKED.set(meminfo['locked'])
-        BITCOIN_MEMINFO_CHUNKS_USED.set(meminfo['chunks_used'])
-        BITCOIN_MEMINFO_CHUNKS_FREE.set(meminfo['chunks_free'])
-
-        BITCOIN_MEMPOOL_BYTES.set(mempool['bytes'])
-        BITCOIN_MEMPOOL_SIZE.set(mempool['size'])
-        BITCOIN_MEMPOOL_USAGE.set(mempool['usage'])
-
-        BITCOIN_TOTAL_BYTES_RECV.set(nettotals['totalbytesrecv'])
-        BITCOIN_TOTAL_BYTES_SENT.set(nettotals['totalbytessent'])
-
-        if latest_block is not None:
-            BITCOIN_LATEST_BLOCK_SIZE.set(latest_block['size'])
-            BITCOIN_LATEST_BLOCK_TXS.set(latest_block['nTx'])
-            BITCOIN_LATEST_BLOCK_HEIGHT.set(latest_block['height'])
-            BITCOIN_LATEST_BLOCK_WEIGHT.set(latest_block['weight'])
-            inputs, outputs = 0, 0
-            value = 0
-            for tx in latest_block['tx']:
-                i = len(tx['vin'])
-                inputs += i
-                o = len(tx['vout'])
-                outputs += o
-                value += sum(o["value"] for o in tx['vout'])
-
-            BITCOIN_LATEST_BLOCK_INPUTS.set(inputs)
-            BITCOIN_LATEST_BLOCK_OUTPUTS.set(outputs)
-            BITCOIN_LATEST_BLOCK_VALUE.set(value)
-
+        try:
+            refresh_metrics()
+        except InWarmupError as e:
+            print("Ignoring error during node warmup: %s" % str(e))
         time.sleep(REFRESH_SECONDS)
 
 if __name__ == '__main__':

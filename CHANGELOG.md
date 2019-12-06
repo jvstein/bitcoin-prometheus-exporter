@@ -3,6 +3,9 @@ Changes to the project.
 
 ## [Unreleased]
 
+### Fixed
+- Avoid crashing on node restart by ignoring `bitcoin.rpc.InWarmupError` exception.
+
 ## [0.3.0] - 2019-11-25
 
 ### Added
