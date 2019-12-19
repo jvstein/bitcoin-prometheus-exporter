@@ -230,6 +230,9 @@ def main():
         except riprova.exceptions.RetryError as e:
             print("Refresh failed during retry. Cause: " + str(e))
             exception_count(e)
+        except json.decoder.JSONDecodeError as e:
+            print("RPC call did not return JSON. Bad credentials? " + str(e))
+            sys.exit(1)
 
         time.sleep(REFRESH_SECONDS)
 

@@ -9,6 +9,7 @@ Changes to the project.
 ### Changed
 - Retry failed RPC calls with exponential timeout using riprova and keep track of retry exceptions using new
   `bitcoin_exporter_errors` metric.
+- Improved error message when credentials are incorrect.
 
 ## [0.3.0] - 2019-11-25
 
