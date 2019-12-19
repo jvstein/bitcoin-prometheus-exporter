@@ -4,8 +4,9 @@ LABEL org.opencontainers.image.title "bitcoin-prometheus-exporter"
 LABEL org.opencontainers.image.description "Prometheus exporter for bitcoin nodes"
 
 RUN pip install --no-cache-dir \
+        prometheus_client \
         python-bitcoinlib \
-        prometheus_client
+        riprova
 
 RUN mkdir -p /monitor
 ADD ./bitcoind-monitor.py /monitor

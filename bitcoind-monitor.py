@@ -13,6 +13,8 @@ try:
 except ImportError:
     from urllib import quote
 
+import riprova
+
 from bitcoin.rpc import InWarmupError, Proxy
 from prometheus_client import start_http_server, Gauge, Counter
 
@@ -66,6 +68,8 @@ BITCOIN_PROTOCOL_VERSION = Gauge('bitcoin_protocol_version', 'The protocol versi
 
 BITCOIN_SIZE_ON_DISK = Gauge('bitcoin_size_on_disk', 'Estimated size of the block and undo files')
 
+EXPORTER_ERRORS = Counter('bitcoin_exporter_errors', 'Number of errors encountered by the exporter', labelnames=['type'])
+
 
 BITCOIN_RPC_SCHEME = os.environ.get('BITCOIN_RPC_SCHEME', 'http')
 BITCOIN_RPC_HOST = os.environ.get('BITCOIN_RPC_HOST', 'localhost')
@@ -74,8 +78,32 @@ BITCOIN_RPC_USER = os.environ.get('BITCOIN_RPC_USER')
 BITCOIN_RPC_PASSWORD = os.environ.get('BITCOIN_RPC_PASSWORD')
 REFRESH_SECONDS = float(os.environ.get('REFRESH_SECONDS', '300'))
 METRICS_PORT = int(os.environ.get('METRICS_PORT', '8334'))
+RETRIES = int(os.environ.get('RETRIES', 5))
+TIMEOUT = int(os.environ.get('TIMEOUT', 30))
 
 
+RETRY_EXCEPTIONS = (
+    InWarmupError,
+    ConnectionRefusedError,
+)
+
+
+def on_retry(err, next_try):
+    err_type = type(err)
+    exception_name = err_type.__module__ + "." + err_type.__name__
+    EXPORTER_ERRORS.labels(**{"type": exception_name}).inc()
+
+
+def error_evaluator(e):
+    return isinstance(e, RETRY_EXCEPTIONS)
+
+
+@riprova.retry(
+    timeout=TIMEOUT,
+    backoff=riprova.ExponentialBackOff(),
+    on_retry=on_retry,
+    error_evaluator=error_evaluator,
+)
 def bitcoinrpc(*args):
     host = BITCOIN_RPC_HOST
     if BITCOIN_RPC_USER and BITCOIN_RPC_PASSWORD:
@@ -184,17 +212,27 @@ def sigterm_handler(signal, frame):
     sys.exit(0)
 
 
+def exception_count(e):
+    err_type = type(e)
+    exception_name = err_type.__module__ + "." + err_type.__name__
+    EXPORTER_ERRORS.labels(**{"type": exception_name}).inc()
+
+
 def main():
     signal.signal(signal.SIGTERM, sigterm_handler)
 
     # Start up the server to expose the metrics.
     start_http_server(METRICS_PORT)
     while True:
+        # Allow riprova.MaxRetriesExceeded and unknown exceptions to crash the process.
         try:
             refresh_metrics()
-        except InWarmupError as e:
-            print("Ignoring error during node warmup: %s" % str(e))
+        except riprova.exceptions.RetryError as e:
+            print("Refresh failed during retry. Cause: " + str(e))
+            exception_count(e)
+
         time.sleep(REFRESH_SECONDS)
+
 
 if __name__ == '__main__':
     main()

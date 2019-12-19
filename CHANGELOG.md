@@ -6,6 +6,10 @@ Changes to the project.
 ### Fixed
 - Avoid crashing on node restart by ignoring `bitcoin.rpc.InWarmupError` exception.
 
+### Changed
+- Retry failed RPC calls with exponential timeout using riprova and keep track of retry exceptions using new
+  `bitcoin_exporter_errors` metric.
+
 ## [0.3.0] - 2019-11-25
 
 ### Added
