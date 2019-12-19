@@ -27,10 +27,7 @@ BITCOIN_HASHPS_NEG1 = Gauge('bitcoin_hashps_neg1', 'Estimated network hash rate 
 BITCOIN_HASHPS_1 = Gauge('bitcoin_hashps_1', 'Estimated network hash rate per second for the last block')
 BITCOIN_HASHPS = Gauge('bitcoin_hashps', 'Estimated network hash rate per second for the last 120 blocks')
 
-BITCOIN_ESTIMATED_SMART_FEE_2 = Gauge('bitcoin_est_smart_fee_2', 'Estimated smart fee per kilobyte for confirmation in 2 blocks')
-BITCOIN_ESTIMATED_SMART_FEE_3 = Gauge('bitcoin_est_smart_fee_3', 'Estimated smart fee per kilobyte for confirmation in 3 blocks')
-BITCOIN_ESTIMATED_SMART_FEE_5 = Gauge('bitcoin_est_smart_fee_5', 'Estimated smart fee per kilobyte for confirmation in 5 blocks')
-BITCOIN_ESTIMATED_SMART_FEE_20 = Gauge('bitcoin_est_smart_fee_20', 'Estimated smart fee per kilobyte for confirmation in 20 blocks')
+BITCOIN_ESTIMATED_SMART_FEE_GAUGES = {}
 
 BITCOIN_WARNINGS = Counter('bitcoin_warnings', 'Number of network or blockchain warnings detected')
 BITCOIN_UPTIME = Gauge('bitcoin_uptime', 'Number of seconds the Bitcoin daemon has been running')
@@ -76,6 +73,7 @@ BITCOIN_RPC_HOST = os.environ.get('BITCOIN_RPC_HOST', 'localhost')
 BITCOIN_RPC_PORT = os.environ.get('BITCOIN_RPC_PORT', '8332')
 BITCOIN_RPC_USER = os.environ.get('BITCOIN_RPC_USER')
 BITCOIN_RPC_PASSWORD = os.environ.get('BITCOIN_RPC_PASSWORD')
+SMART_FEES = [int(f) for f in os.environ.get('SMARTFEE_BLOCKS', "2,3,5,20").split(",")]
 REFRESH_SECONDS = float(os.environ.get('REFRESH_SECONDS', '300'))
 METRICS_PORT = int(os.environ.get('METRICS_PORT', '8334'))
 RETRIES = int(os.environ.get('RETRIES', 5))
@@ -130,6 +128,24 @@ def get_block(block_hash):
     return block
 
 
+def smartfee_gauge(num_blocks):
+    gauge = BITCOIN_ESTIMATED_SMART_FEE_GAUGES.get(num_blocks)
+    if gauge is None:
+        gauge = Gauge(
+            'bitcoin_est_smart_fee_%d' % num_blocks,
+            'Estimated smart fee per kilobyte for confirmation in %d blocks' % num_blocks
+        )
+        BITCOIN_ESTIMATED_SMART_FEE_GAUGES[num_blocks] = gauge
+    return gauge
+
+
+def do_smartfee(num_blocks):
+    smartfee = bitcoinrpc('estimatesmartfee', num_blocks).get('feerate')
+    if smartfee is not None:
+        gauge = smartfee_gauge(num_blocks)
+        gauge.set(smartfee)
+
+
 def refresh_metrics():
     uptime = int(bitcoinrpc('uptime'))
     meminfo = bitcoinrpc('getmemoryinfo', 'stats')['locked']
@@ -142,10 +158,7 @@ def refresh_metrics():
     hashps_120 = float(bitcoinrpc('getnetworkhashps', 120))  # 120 is the default
     hashps_neg1 = float(bitcoinrpc('getnetworkhashps', -1))
     hashps_1 = float(bitcoinrpc('getnetworkhashps', 1))
-    smartfee_2 = bitcoinrpc('estimatesmartfee', 2)['feerate']
-    smartfee_3 = bitcoinrpc('estimatesmartfee', 3)['feerate']
-    smartfee_5 = bitcoinrpc('estimatesmartfee', 5)['feerate']
-    smartfee_20 = bitcoinrpc('estimatesmartfee', 20)['feerate']
+
     banned = bitcoinrpc('listbanned')
 
     BITCOIN_UPTIME.set(uptime)
@@ -155,13 +168,12 @@ def refresh_metrics():
     BITCOIN_HASHPS.set(hashps_120)
     BITCOIN_HASHPS_NEG1.set(hashps_neg1)
     BITCOIN_HASHPS_1.set(hashps_1)
-    BITCOIN_ESTIMATED_SMART_FEE_2.set(smartfee_2)
-    BITCOIN_ESTIMATED_SMART_FEE_3.set(smartfee_3)
-    BITCOIN_ESTIMATED_SMART_FEE_5.set(smartfee_5)
-    BITCOIN_ESTIMATED_SMART_FEE_20.set(smartfee_20)
     BITCOIN_SERVER_VERSION.set(networkinfo['version'])
     BITCOIN_PROTOCOL_VERSION.set(networkinfo['protocolversion'])
     BITCOIN_SIZE_ON_DISK.set(blockchaininfo['size_on_disk'])
+
+    for smartfee in SMART_FEES:
+        do_smartfee(smartfee)
 
     for ban in banned:
         BITCOIN_BAN_CREATED.labels(address=ban['address'], reason=ban['ban_reason']).set(ban['ban_created'])

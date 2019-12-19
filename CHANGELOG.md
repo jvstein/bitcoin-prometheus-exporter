@@ -5,11 +5,15 @@ Changes to the project.
 
 ### Fixed
 - Avoid crashing on node restart by ignoring `bitcoin.rpc.InWarmupError` exception.
+- Prevent KeyError when smartfee values are not calculable ([#2](issue-2)).
+
+[issue-2]: https://github.com/jvstein/bitcoin-prometheus-exporter/issues/2
 
 ### Changed
 - Retry failed RPC calls with exponential timeout using riprova and keep track of retry exceptions using new
   `bitcoin_exporter_errors` metric.
 - Improved error message when credentials are incorrect.
+- Make smartfee metrics configurable using `SMARTFEE_BLOCKS` environment variable.
 
 ## [0.3.0] - 2019-11-25
 
