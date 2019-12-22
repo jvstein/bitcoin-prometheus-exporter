@@ -8,6 +8,8 @@ import signal
 import subprocess
 import sys
 
+from datetime import datetime
+
 try:
     from urllib.parse import quote
 except ImportError:
@@ -66,6 +68,7 @@ BITCOIN_PROTOCOL_VERSION = Gauge('bitcoin_protocol_version', 'The protocol versi
 BITCOIN_SIZE_ON_DISK = Gauge('bitcoin_size_on_disk', 'Estimated size of the block and undo files')
 
 EXPORTER_ERRORS = Counter('bitcoin_exporter_errors', 'Number of errors encountered by the exporter', labelnames=['type'])
+PROCESS_TIME = Counter('bitcoin_exporter_process_time', 'Time spent processing metrics from bitcoin node')
 
 
 BITCOIN_RPC_SCHEME = os.environ.get('BITCOIN_RPC_SCHEME', 'http')
@@ -236,6 +239,8 @@ def main():
     # Start up the server to expose the metrics.
     start_http_server(METRICS_PORT)
     while True:
+        process_start = datetime.now()
+
         # Allow riprova.MaxRetriesExceeded and unknown exceptions to crash the process.
         try:
             refresh_metrics()
@@ -245,6 +250,9 @@ def main():
         except json.decoder.JSONDecodeError as e:
             print("RPC call did not return JSON. Bad credentials? " + str(e))
             sys.exit(1)
+
+        duration = datetime.now() - process_start
+        PROCESS_TIME.inc(duration.total_seconds())
 
         time.sleep(REFRESH_SECONDS)
 

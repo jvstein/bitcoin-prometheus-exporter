@@ -3,6 +3,9 @@ Changes to the project.
 
 ## [Unreleased]
 
+### Added
+- New counter metric `bitcoin_exporter_process_time_total` for time spent refreshing the metrics.
+
 ### Fixed
 - Avoid crashing on node restart by ignoring `bitcoin.rpc.InWarmupError` exception.
 - Prevent KeyError when smartfee values are not calculable ([#2](issue-2)).
