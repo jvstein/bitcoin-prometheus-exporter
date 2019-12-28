@@ -219,8 +219,6 @@ def refresh_metrics():
         BITCOIN_LATEST_BLOCK_OUTPUTS.set(outputs)
         BITCOIN_LATEST_BLOCK_VALUE.set(value)
 
-    time.sleep(REFRESH_SECONDS)
-
 
 def sigterm_handler(signal, frame):
     print('Received SIGTERM. Exiting.')
