@@ -9,10 +9,15 @@ Changes to the project.
 
 [pr-5]: https://github.com/jvstein/bitcoin-prometheus-exporter/pull/5
 
+## Changed
+- Update script shebang to use PATH ([#6][pr-6])
+
+[pr-6]: https://github.com/jvstein/bitcoin-prometheus-exporter/pull/6
+
 ### Fixed
 - Avoid crashing on node restart by ignoring `bitcoin.rpc.InWarmupError` exception.
-- Prevent KeyError when smartfee values are not calculable ([#2](issue-2)).
-- Fix duplicate sleep call introduced in 5d83f9e ([#3](issue-3)).
+- Prevent KeyError when smartfee values are not calculable ([#2][issue-2]).
+- Fix duplicate sleep call introduced in 5d83f9e ([#3][issue-3]).
 
 [issue-2]: https://github.com/jvstein/bitcoin-prometheus-exporter/issues/2
 [issue-3]: https://github.com/jvstein/bitcoin-prometheus-exporter/issues/3
