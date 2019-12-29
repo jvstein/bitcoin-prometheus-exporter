@@ -9,6 +9,7 @@ import subprocess
 import sys
 
 from datetime import datetime
+from pathlib import Path
 
 try:
     from urllib.parse import quote
@@ -72,6 +73,7 @@ PROCESS_TIME = Counter('bitcoin_exporter_process_time', 'Time spent processing m
 
 
 BITCOIN_RPC_SCHEME = os.environ.get('BITCOIN_RPC_SCHEME', 'http')
+BITCOIN_RPC_USE_CONFIG_FILE = True if int(os.environ.get('BITCOIN_RPC_USE_CONFIG_FILE')) == 1 else False
 BITCOIN_RPC_HOST = os.environ.get('BITCOIN_RPC_HOST', 'localhost')
 BITCOIN_RPC_PORT = os.environ.get('BITCOIN_RPC_PORT', '8332')
 BITCOIN_RPC_USER = os.environ.get('BITCOIN_RPC_USER')
@@ -106,17 +108,20 @@ def error_evaluator(e):
     error_evaluator=error_evaluator,
 )
 def bitcoinrpc(*args):
-    host = BITCOIN_RPC_HOST
-    if BITCOIN_RPC_USER and BITCOIN_RPC_PASSWORD:
-        host = "%s:%s@%s" % (
-            quote(BITCOIN_RPC_USER),
-            quote(BITCOIN_RPC_PASSWORD),
-            host,
-        )
-    if BITCOIN_RPC_PORT:
-        host = "%s:%s" % (host, BITCOIN_RPC_PORT)
-    service_url = "%s://%s" % (BITCOIN_RPC_SCHEME, host)
-    proxy = Proxy(service_url=service_url)
+    if BITCOIN_RPC_USE_CONFIG_FILE:
+        proxy = Proxy(btc_conf_file="{}/.bitcoin/bitcoin.conf".format(Path.home()))
+    else:
+        host = BITCOIN_RPC_HOST
+        if BITCOIN_RPC_USER and BITCOIN_RPC_PASSWORD:
+            host = "%s:%s@%s" % (
+                quote(BITCOIN_RPC_USER),
+                quote(BITCOIN_RPC_PASSWORD),
+                host,
+            )
+        if BITCOIN_RPC_PORT:
+            host = "%s:%s" % (host, BITCOIN_RPC_PORT)
+        service_url = "%s://%s" % (BITCOIN_RPC_SCHEME, host)
+        proxy = Proxy(service_url=service_url)
     result = proxy.call(*args)
     return result
 
