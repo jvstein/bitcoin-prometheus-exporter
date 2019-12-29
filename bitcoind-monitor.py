@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import json
+import logging
 import time
 import os
 import signal
@@ -19,6 +20,9 @@ import riprova
 
 from bitcoin.rpc import InWarmupError, Proxy
 from prometheus_client import start_http_server, Gauge, Counter
+
+
+logger = logging.getLogger("bitcoin-exporter")
 
 
 # Create Prometheus metrics to track bitcoind stats.
@@ -83,6 +87,7 @@ REFRESH_SECONDS = float(os.environ.get('REFRESH_SECONDS', '300'))
 METRICS_PORT = int(os.environ.get('METRICS_PORT', '8334'))
 RETRIES = int(os.environ.get('RETRIES', 5))
 TIMEOUT = int(os.environ.get('TIMEOUT', 30))
+LOG_LEVEL = os.environ.get('LOG_LEVEL', 'INFO')
 
 
 RETRY_EXCEPTIONS = (
@@ -95,6 +100,7 @@ def on_retry(err, next_try):
     err_type = type(err)
     exception_name = err_type.__module__ + "." + err_type.__name__
     EXPORTER_ERRORS.labels(**{"type": exception_name}).inc()
+    logger.error("Retry after exception %s: %s", exception_name, err)
 
 
 def error_evaluator(e):
@@ -108,6 +114,9 @@ def error_evaluator(e):
     error_evaluator=error_evaluator,
 )
 def bitcoinrpc(*args):
+    if logger.isEnabledFor(logging.DEBUG):
+        logger.debug("RPC call: " + " ".join(str(a) for a in args))
+
     host = BITCOIN_RPC_HOST
     if BITCOIN_RPC_USER and BITCOIN_RPC_PASSWORD:
         host = "%s:%s@%s" % (
@@ -120,6 +129,8 @@ def bitcoinrpc(*args):
     service_url = "%s://%s" % (BITCOIN_RPC_SCHEME, host)
     proxy = Proxy(service_url=service_url)
     result = proxy.call(*args)
+
+    logger.debug("Result:   %s", result)
     return result
 
 
@@ -127,8 +138,7 @@ def get_block(block_hash):
     try:
         block = bitcoinrpc('getblock', block_hash, 2)
     except Exception as e:
-        print(e)
-        print('Error: Can\'t retrieve block ' + block_hash + ' from bitcoind.')
+        logger.exception("Failed to retrieve block " + block_hash + " from bitcoind.")
         return None
     return block
 
@@ -224,7 +234,7 @@ def refresh_metrics():
 
 
 def sigterm_handler(signal, frame):
-    print('Received SIGTERM. Exiting.')
+    logger.warning('Received SIGTERM. Exiting.')
     sys.exit(0)
 
 
@@ -235,6 +245,12 @@ def exception_count(e):
 
 
 def main():
+    # Set up logging to look similar to bitcoin logs (UTC).
+    logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s', datefmt='%Y-%m-%dT%H:%M:%SZ')
+    logging.Formatter.converter = time.gmtime
+    logger.setLevel(LOG_LEVEL)
+
+    # Handle SIGTERM gracefully.
     signal.signal(signal.SIGTERM, sigterm_handler)
 
     # Start up the server to expose the metrics.
@@ -246,14 +262,15 @@ def main():
         try:
             refresh_metrics()
         except riprova.exceptions.RetryError as e:
-            print("Refresh failed during retry. Cause: " + str(e))
+            logger.error("Refresh failed during retry. Cause: " + str(e))
             exception_count(e)
         except json.decoder.JSONDecodeError as e:
-            print("RPC call did not return JSON. Bad credentials? " + str(e))
+            logger.error("RPC call did not return JSON. Bad credentials? " + str(e))
             sys.exit(1)
 
         duration = datetime.now() - process_start
         PROCESS_TIME.inc(duration.total_seconds())
+        logger.info("Refresh took %s seconds, sleeping for %s seconds", duration, REFRESH_SECONDS)
 
         time.sleep(REFRESH_SECONDS)
 
