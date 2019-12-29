@@ -1,0 +1,25 @@
+version: '3.3'
+services:
+  bitcoind:
+    # DO NOT USE THIS IMAGE EXCEPT FOR TESTING!
+    image: jvstein/bitcoin-test-node:latest
+    command:
+      - bitcoind
+      - -printtoconsole
+      - -conf=/etc/bitcoin/bitcoin.conf
+    volumes:
+      - ./test-bitcoin.conf:/etc/bitcoin/bitcoin.conf
+
+  exporter:
+    image: jvstein/bitcoin-prometheus-exporter:latest
+    build: .
+    ports:
+      - "8334:8334"
+    environment:
+      BITCOIN_RPC_HOST: bitcoind
+      BITCOIN_RPC_USER: alice
+      BITCOIN_RPC_PASSWORD: "password"
+      REFRESH_SECONDS: 1
+      LOG_LEVEL: "INFO"
+    depends_on:
+      - bitcoind

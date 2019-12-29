@@ -7,6 +7,7 @@ Changes to the project.
 - New counter metric `bitcoin_exporter_process_time_total` for time spent refreshing the metrics.
 - New `bitcoin_verification_progress` metric to track chain verification progress ([#5][pr-5]).
 - Use `logging` for output messages and improve level of output for errors ([#4][issue-4]).
+- Add docker-compose config with basic setup for testing regressions.
 
 [pr-5]: https://github.com/jvstein/bitcoin-prometheus-exporter/pull/5
 [issue-4]: https://github.com/jvstein/bitcoin-prometheus-exporter/issues/4

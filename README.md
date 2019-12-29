@@ -27,5 +27,17 @@ docker run \
     jvstein/bitcoin-prometheus-exporter:v0.3.0
 ```
 
+## Basic Testing
+There's a [`docker-compose.yml`](docker-compose.yml) file in the repository that references a test bitcoin node. To
+test changes to the exporter in docker, run the following commands.
+
+```
+docker-compose down
+docker-compose build
+docker-compose up
+```
+
+If you see a lot of `ConnectionRefusedError` errors, run `chmod og+r test-bitcoin.conf`.
+
 # [Change Log](CHANGELOG.md)
 See the [`CHANGELOG.md`](CHANGELOG.md) file for changes.
