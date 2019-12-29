@@ -67,6 +67,9 @@ BITCOIN_PROTOCOL_VERSION = Gauge('bitcoin_protocol_version', 'The protocol versi
 
 BITCOIN_SIZE_ON_DISK = Gauge('bitcoin_size_on_disk', 'Estimated size of the block and undo files')
 
+# new
+BITCOIN_VERIFICATION_PROGRESS =  Gauge('bitcoin_verification_progress', 'Estimate of verification progress [0..1]')
+
 EXPORTER_ERRORS = Counter('bitcoin_exporter_errors', 'Number of errors encountered by the exporter', labelnames=['type'])
 PROCESS_TIME = Counter('bitcoin_exporter_process_time', 'Time spent processing metrics from bitcoin node')
 
@@ -174,6 +177,9 @@ def refresh_metrics():
     BITCOIN_SERVER_VERSION.set(networkinfo['version'])
     BITCOIN_PROTOCOL_VERSION.set(networkinfo['protocolversion'])
     BITCOIN_SIZE_ON_DISK.set(blockchaininfo['size_on_disk'])
+
+    # new
+    BITCOIN_VERIFICATION_PROGRESS.set(blockchaininfo['verificationprogress'])
 
     for smartfee in SMART_FEES:
         do_smartfee(smartfee)
