@@ -10,6 +10,7 @@ import subprocess
 import sys
 
 from datetime import datetime
+from pathlib import Path
 
 try:
     from urllib.parse import quote
@@ -117,19 +118,23 @@ def bitcoinrpc(*args):
     if logger.isEnabledFor(logging.DEBUG):
         logger.debug("RPC call: " + " ".join(str(a) for a in args))
 
-    host = BITCOIN_RPC_HOST
-    if BITCOIN_RPC_USER and BITCOIN_RPC_PASSWORD:
-        host = "%s:%s@%s" % (
-            quote(BITCOIN_RPC_USER),
-            quote(BITCOIN_RPC_PASSWORD),
-            host,
-        )
-    if BITCOIN_RPC_PORT:
-        host = "%s:%s" % (host, BITCOIN_RPC_PORT)
-    service_url = "%s://%s" % (BITCOIN_RPC_SCHEME, host)
-    proxy = Proxy(service_url=service_url)
-    result = proxy.call(*args)
+    bitcoin_conf = Path.home() / ".bitcoin" / "bitcoin.conf"
+    if bitcoin_conf.exists():
+        proxy = Proxy(btc_conf_file=bitcoin_conf)
+    else:
+        host = BITCOIN_RPC_HOST
+        if BITCOIN_RPC_USER and BITCOIN_RPC_PASSWORD:
+            host = "%s:%s@%s" % (
+                quote(BITCOIN_RPC_USER),
+                quote(BITCOIN_RPC_PASSWORD),
+                host,
+            )
+        if BITCOIN_RPC_PORT:
+            host = "%s:%s" % (host, BITCOIN_RPC_PORT)
+        service_url = "%s://%s" % (BITCOIN_RPC_SCHEME, host)
+        proxy = Proxy(service_url=service_url)
 
+    result = proxy.call(*args)
     logger.debug("Result:   %s", result)
     return result
 

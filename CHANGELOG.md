@@ -14,8 +14,10 @@ Changes to the project.
 
 ## Changed
 - Update script shebang to use PATH ([#6][pr-6])
+- Prefer the `$HOME/.bitcoin/bitcoin.conf` file over `BITCOIN_RPC_HOST`, `BITCOIN_RPC_USER`, ... if it exists ([#7][pr-7]).
 
 [pr-6]: https://github.com/jvstein/bitcoin-prometheus-exporter/pull/6
+[pr-7]: https://github.com/jvstein/bitcoin-prometheus-exporter/pull/7
 
 ### Fixed
 - Avoid crashing on node restart by ignoring `bitcoin.rpc.InWarmupError` exception.
