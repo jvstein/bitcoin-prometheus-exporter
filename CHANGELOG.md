@@ -5,6 +5,9 @@ Changes to the project.
 
 ### Added
 - New counter metric `bitcoin_exporter_process_time_total` for time spent refreshing the metrics.
+- New `bitcoin_verification_progress` metric to track chain verification progress ([#5][pr-5]).
+
+[pr-5]: https://github.com/jvstein/bitcoin-prometheus-exporter/pull/5
 
 ### Fixed
 - Avoid crashing on node restart by ignoring `bitcoin.rpc.InWarmupError` exception.
