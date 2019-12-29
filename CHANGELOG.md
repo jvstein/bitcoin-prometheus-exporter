@@ -12,9 +12,10 @@ Changes to the project.
 [pr-5]: https://github.com/jvstein/bitcoin-prometheus-exporter/pull/5
 [issue-4]: https://github.com/jvstein/bitcoin-prometheus-exporter/issues/4
 
-## Changed
+### Changed
 - Update script shebang to use PATH ([#6][pr-6])
 - Prefer the `$HOME/.bitcoin/bitcoin.conf` file over `BITCOIN_RPC_HOST`, `BITCOIN_RPC_USER`, ... if it exists ([#7][pr-7]).
+- Add pre-commit hooks for catching style and code issues.
 
 [pr-6]: https://github.com/jvstein/bitcoin-prometheus-exporter/pull/6
 [pr-7]: https://github.com/jvstein/bitcoin-prometheus-exporter/pull/7

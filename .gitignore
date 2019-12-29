@@ -1,0 +1,14 @@
+.venv/
+venv/
+.mypy_cache/
+
+# python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# vim
+*.swn
+*.swo
+*.swp
+*~
