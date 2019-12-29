@@ -73,7 +73,6 @@ PROCESS_TIME = Counter('bitcoin_exporter_process_time', 'Time spent processing m
 
 
 BITCOIN_RPC_SCHEME = os.environ.get('BITCOIN_RPC_SCHEME', 'http')
-BITCOIN_RPC_USE_CONFIG_FILE = True if int(os.environ.get('BITCOIN_RPC_USE_CONFIG_FILE')) == 1 else False
 BITCOIN_RPC_HOST = os.environ.get('BITCOIN_RPC_HOST', 'localhost')
 BITCOIN_RPC_PORT = os.environ.get('BITCOIN_RPC_PORT', '8332')
 BITCOIN_RPC_USER = os.environ.get('BITCOIN_RPC_USER')
@@ -108,8 +107,9 @@ def error_evaluator(e):
     error_evaluator=error_evaluator,
 )
 def bitcoinrpc(*args):
-    if BITCOIN_RPC_USE_CONFIG_FILE:
-        proxy = Proxy(btc_conf_file="{}/.bitcoin/bitcoin.conf".format(Path.home()))
+    bitcoin_conf = Path.home() / ".bitcoin" / "bitcoin.conf"
+    if bitcoin_conf.exists():
+        proxy = Proxy(btc_conf_file=bitcoin_conf)
     else:
         host = BITCOIN_RPC_HOST
         if BITCOIN_RPC_USER and BITCOIN_RPC_PASSWORD:
