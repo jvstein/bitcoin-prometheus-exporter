@@ -7,6 +7,13 @@
       "type": "datasource",
       "pluginId": "prometheus",
       "pluginName": "Prometheus"
+    },
+    {
+      "name": "VAR_NODE_VAR",
+      "type": "constant",
+      "label": "node_var",
+      "value": "instance",
+      "description": "Label to distinguish between multiple instances. If k8s use 'app', if manually configuring prometheus, maybe use 'instance'."
     }
   ],
   "__requires": [
@@ -57,6 +64,7 @@
   "panels": [
     {
       "content": "",
+      "datasource": "${DS_PROMETHEUS}",
       "editable": true,
       "error": false,
       "gridPos": {
@@ -69,6 +77,7 @@
       "links": [],
       "minSpan": 4,
       "mode": "html",
+      "options": {},
       "repeat": "node",
       "repeatDirection": "h",
       "style": {},
@@ -115,7 +124,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "bitcoin_verification_progress{instance=~\"$node\"}",
+          "expr": "bitcoin_verification_progress{$node_var=~\"$node\"}",
           "format": "time_series",
           "hide": false,
           "interval": "",
@@ -210,14 +219,14 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(irate(bitcoin_total_bytes_sent{instance=~\"$node\"}[5m]))",
+          "expr": "sum(irate(bitcoin_total_bytes_sent{$node_var=~\"$node\"}[5m]))",
           "format": "time_series",
           "intervalFactor": 1,
           "legendFormat": "sent",
           "refId": "A"
         },
         {
-          "expr": "-sum(irate(bitcoin_total_bytes_recv{instance=~\"$node\"}[10m]))",
+          "expr": "-sum(irate(bitcoin_total_bytes_recv{$node_var=~\"$node\"}[10m]))",
           "format": "time_series",
           "intervalFactor": 1,
           "legendFormat": "received",
@@ -311,7 +320,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(bitcoin_latest_block_value{instance=~\"$node\"})",
+          "expr": "sum(bitcoin_latest_block_value{$node_var=~\"$node\"})",
           "format": "time_series",
           "intervalFactor": 1,
           "legendFormat": "BTC",
@@ -404,7 +413,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "floor(sum(rate(bitcoin_blocks{instance=~\"$node\"}[3h])) * 3600 * 24)",
+          "expr": "floor(sum(rate(bitcoin_blocks{$node_var=~\"$node\"}[3h])) * 3600 * 24)",
           "format": "time_series",
           "hide": false,
           "intervalFactor": 1,
@@ -412,7 +421,7 @@
           "refId": "C"
         },
         {
-          "expr": "floor(sum(rate(bitcoin_blocks{instance=~\"$node\"}[6h])) * 3600 * 24)",
+          "expr": "floor(sum(rate(bitcoin_blocks{$node_var=~\"$node\"}[6h])) * 3600 * 24)",
           "format": "time_series",
           "hide": false,
           "intervalFactor": 1,
@@ -420,7 +429,7 @@
           "refId": "E"
         },
         {
-          "expr": "floor(sum(rate(bitcoin_blocks{instance=~\"$node\"}[12h])) * 3600 * 24)",
+          "expr": "floor(sum(rate(bitcoin_blocks{$node_var=~\"$node\"}[12h])) * 3600 * 24)",
           "format": "time_series",
           "hide": false,
           "intervalFactor": 1,
@@ -428,7 +437,7 @@
           "refId": "A"
         },
         {
-          "expr": "floor(sum(rate(bitcoin_blocks{instance=~\"$node\"}[7d])) * 3600 * 24)",
+          "expr": "floor(sum(rate(bitcoin_blocks{$node_var=~\"$node\"}[7d])) * 3600 * 24)",
           "format": "time_series",
           "intervalFactor": 1,
           "legendFormat": "7d",
@@ -521,14 +530,14 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "avg(bitcoin_hashps{instance=~\"$node\"})",
+          "expr": "avg(bitcoin_hashps{$node_var=~\"$node\"})",
           "format": "time_series",
           "intervalFactor": 1,
           "legendFormat": "120-blocks",
           "refId": "B"
         },
         {
-          "expr": "avg(bitcoin_hashps_neg1{instance=~\"$node\"})",
+          "expr": "avg(bitcoin_hashps_neg1{$node_var=~\"$node\"})",
           "format": "time_series",
           "intervalFactor": 1,
           "legendFormat": "last-difficulty",
@@ -622,7 +631,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "avg(bitcoin_est_smart_fee_2{instance=~\"$node\"}) * (100 * 1000 * 1000) / 1024",
+          "expr": "avg(bitcoin_est_smart_fee_2{$node_var=~\"$node\"}) * (100 * 1000 * 1000) / 1024",
           "format": "time_series",
           "interval": "2m",
           "intervalFactor": 1,
@@ -630,21 +639,21 @@
           "refId": "A"
         },
         {
-          "expr": "avg(bitcoin_est_smart_fee_20{instance=~\"$node\"}) * (100 * 1000 * 1000) / 1024",
+          "expr": "avg(bitcoin_est_smart_fee_20{$node_var=~\"$node\"}) * (100 * 1000 * 1000) / 1024",
           "format": "time_series",
           "intervalFactor": 1,
           "legendFormat": "20-blocks",
           "refId": "B"
         },
         {
-          "expr": "avg(bitcoin_est_smart_fee_3{instance=~\"$node\"}) * (100 * 1000 * 1000) / 1024",
+          "expr": "avg(bitcoin_est_smart_fee_3{$node_var=~\"$node\"}) * (100 * 1000 * 1000) / 1024",
           "format": "time_series",
           "intervalFactor": 1,
           "legendFormat": "3-blocks",
           "refId": "C"
         },
         {
-          "expr": "avg(bitcoin_est_smart_fee_5{instance=~\"$node\"}) * (100 * 1000 * 1000) / 1024",
+          "expr": "avg(bitcoin_est_smart_fee_5{$node_var=~\"$node\"}) * (100 * 1000 * 1000) / 1024",
           "format": "time_series",
           "intervalFactor": 1,
           "legendFormat": "5-blocks",
@@ -737,14 +746,14 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "count(bitcoin_banned_until{instance=~\"$node\"}) by (reason)",
+          "expr": "count(bitcoin_banned_until{$node_var=~\"$node\"}) by (reason)",
           "format": "time_series",
           "intervalFactor": 1,
           "legendFormat": "ban - {{ reason }}",
           "refId": "B"
         },
         {
-          "expr": "sum(bitcoin_peers{instance=~\"$node\"})",
+          "expr": "sum(bitcoin_peers{$node_var=~\"$node\"})",
           "format": "time_series",
           "intervalFactor": 1,
           "legendFormat": "peers",
@@ -838,7 +847,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "avg(bitcoin_difficulty{instance=~\"$node\"})",
+          "expr": "avg(bitcoin_difficulty{$node_var=~\"$node\"})",
           "format": "time_series",
           "intervalFactor": 1,
           "legendFormat": "difficulty",
@@ -932,7 +941,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "avg(bitcoin_num_chaintips{instance=~\"$node\"})",
+          "expr": "avg(bitcoin_num_chaintips{$node_var=~\"$node\"})",
           "format": "time_series",
           "hide": false,
           "intervalFactor": 1,
@@ -1037,14 +1046,14 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "avg(bitcoin_protocol_version{instance=~\"$node\"})",
+          "expr": "avg(bitcoin_protocol_version{$node_var=~\"$node\"})",
           "format": "time_series",
           "intervalFactor": 1,
           "legendFormat": "protocol",
           "refId": "A"
         },
         {
-          "expr": "avg(bitcoin_server_version{instance=~\"$node\"})",
+          "expr": "avg(bitcoin_server_version{$node_var=~\"$node\"})",
           "format": "time_series",
           "intervalFactor": 1,
           "legendFormat": "server",
@@ -1106,13 +1115,14 @@
         "allValue": null,
         "current": {},
         "datasource": "${DS_PROMETHEUS}",
+        "definition": "",
         "hide": 0,
         "includeAll": false,
         "label": null,
         "multi": true,
         "name": "node",
         "options": [],
-        "query": "label_values(bitcoin_uptime, instance)",
+        "query": "label_values(bitcoin_uptime, ${VAR_NODE_VAR})",
         "refresh": 1,
         "regex": "",
         "skipUrlSync": false,
@@ -1122,6 +1132,24 @@
         "tagsQuery": "",
         "type": "query",
         "useTags": false
+      },
+      {
+        "current": {
+          "value": "${VAR_NODE_VAR}",
+          "text": "${VAR_NODE_VAR}"
+        },
+        "hide": 2,
+        "label": null,
+        "name": "node_var",
+        "options": [
+          {
+            "value": "${VAR_NODE_VAR}",
+            "text": "${VAR_NODE_VAR}"
+          }
+        ],
+        "query": "${VAR_NODE_VAR}",
+        "skipUrlSync": false,
+        "type": "constant"
       }
     ]
   },
