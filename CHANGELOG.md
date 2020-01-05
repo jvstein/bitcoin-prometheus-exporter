@@ -3,6 +3,7 @@ Changes to the project.
 
 ## [Unreleased]
 
+
 ## [0.4.0] - 2020-01-05
 
 ### Added
@@ -15,6 +16,10 @@ Changes to the project.
 [issue-4]: https://github.com/jvstein/bitcoin-prometheus-exporter/issues/4
 
 ### Changed
+- Retry failed RPC calls with exponential timeout using riprova and keep track of retry exceptions using new
+  `bitcoin_exporter_errors` metric.
+- Improved error message when credentials are incorrect.
+- Make smartfee metrics configurable using `SMARTFEE_BLOCKS` environment variable.
 - Update script shebang to use PATH ([#6][pr-6])
 - Prefer the `$HOME/.bitcoin/bitcoin.conf` file over `BITCOIN_RPC_HOST`, `BITCOIN_RPC_USER`, ... if it exists ([#7][pr-7]).
 - Add pre-commit hooks for catching style and code issues.
@@ -31,11 +36,6 @@ Changes to the project.
 [issue-2]: https://github.com/jvstein/bitcoin-prometheus-exporter/issues/2
 [issue-3]: https://github.com/jvstein/bitcoin-prometheus-exporter/issues/3
 
-### Changed
-- Retry failed RPC calls with exponential timeout using riprova and keep track of retry exceptions using new
-  `bitcoin_exporter_errors` metric.
-- Improved error message when credentials are incorrect.
-- Make smartfee metrics configurable using `SMARTFEE_BLOCKS` environment variable.
 
 ## [0.3.0] - 2019-11-25
 
@@ -51,6 +51,7 @@ Changes to the project.
 - Dead code cleanup (`find_bitcoin_cli` and `BITCOIN_CLI_PATH`).
 
 [getblock]: https://bitcoincore.org/en/doc/0.18.0/rpc/blockchain/getblock/
+
 
 ## [0.2.0] - 2019-10-20
 
