@@ -15,4 +15,6 @@ RUN pip install --no-cache-dir \
 RUN mkdir -p /monitor
 ADD ./bitcoind-monitor.py /monitor
 
+USER nobody
+
 CMD ["/monitor/bitcoind-monitor.py"]
