@@ -3,6 +3,9 @@ Changes to the project.
 
 ## [Unreleased]
 
+## Changed
+- Switch to python 3.8 and alpine for base image.
+
 
 ## [0.4.0] - 2020-01-05
 
