@@ -8,6 +8,7 @@ Changes to the project.
 - Update docker container to use `nobody` instead of default `root` account.
 - Support loading bitcoin config from `BITCOIN_CONF_PATH` environment variable.
 - Reuse the `Proxy` RPC client to avoid repeatedly looking for config file.
+- Config file examples in the docker-compose file.
 
 
 ## [0.4.0] - 2020-01-05
