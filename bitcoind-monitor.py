@@ -124,7 +124,7 @@ LOG_LEVEL = os.environ.get("LOG_LEVEL", "INFO")
 
 RETRY_EXCEPTIONS = (
     InWarmupError,
-    ConnectionRefusedError,
+    ConnectionError,
 )
 
 RpcResult = Union[Dict[str, Any], List[Any], str, int, float, bool, None]

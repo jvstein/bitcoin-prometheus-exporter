@@ -9,6 +9,7 @@ Changes to the project.
 - Support loading bitcoin config from `BITCOIN_CONF_PATH` environment variable.
 - Reuse the `Proxy` RPC client to avoid repeatedly looking for config file.
 - Config file examples in the docker-compose file.
+- Retry on `ConnectionError`, not just `ConnectionRefusedError`.
 
 
 ## [0.4.0] - 2020-01-05
