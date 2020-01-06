@@ -112,6 +112,7 @@ BITCOIN_RPC_HOST = os.environ.get("BITCOIN_RPC_HOST", "localhost")
 BITCOIN_RPC_PORT = os.environ.get("BITCOIN_RPC_PORT", "8332")
 BITCOIN_RPC_USER = os.environ.get("BITCOIN_RPC_USER")
 BITCOIN_RPC_PASSWORD = os.environ.get("BITCOIN_RPC_PASSWORD")
+BITCOIN_CONF_PATH = os.environ.get("BITCOIN_CONF_PATH")
 SMART_FEES = [int(f) for f in os.environ.get("SMARTFEE_BLOCKS", "2,3,5,20").split(",")]
 REFRESH_SECONDS = float(os.environ.get("REFRESH_SECONDS", "300"))
 METRICS_PORT = int(os.environ.get("METRICS_PORT", "8334"))
@@ -139,6 +140,12 @@ def error_evaluator(e: Exception) -> bool:
     return isinstance(e, RETRY_EXCEPTIONS)
 
 
+def bitcoin_conf_path() -> Path:
+    if BITCOIN_CONF_PATH is not None:
+        return Path(BITCOIN_CONF_PATH)
+    return Path.home() / ".bitcoin" / "bitcoin.conf"
+
+
 @riprova.retry(
     timeout=TIMEOUT,
     backoff=riprova.ExponentialBackOff(),
@@ -149,7 +156,7 @@ def bitcoinrpc(*args) -> RpcResult:
     if logger.isEnabledFor(logging.DEBUG):
         logger.debug("RPC call: " + " ".join(str(a) for a in args))
 
-    bitcoin_conf = Path.home() / ".bitcoin" / "bitcoin.conf"
+    bitcoin_conf = bitcoin_conf_path()
     if bitcoin_conf.exists():
         proxy = Proxy(btc_conf_file=bitcoin_conf)
     else:
