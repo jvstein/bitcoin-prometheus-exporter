@@ -9,6 +9,7 @@ import signal
 import sys
 
 from datetime import datetime
+from functools import lru_cache
 from pathlib import Path
 from typing import Any
 from typing import Dict
@@ -146,6 +147,22 @@ def bitcoin_conf_path() -> Path:
     return Path.home() / ".bitcoin" / "bitcoin.conf"
 
 
+@lru_cache(maxsize=1)
+def rpc_client():
+    bitcoin_conf: Path = bitcoin_conf_path()
+    if bitcoin_conf.exists():
+        logger.info("Using config file: %s", bitcoin_conf)
+        return Proxy(btc_conf_file=bitcoin_conf)
+    else:
+        host = BITCOIN_RPC_HOST
+        if BITCOIN_RPC_USER and BITCOIN_RPC_PASSWORD:
+            host = "%s:%s@%s" % (quote(BITCOIN_RPC_USER), quote(BITCOIN_RPC_PASSWORD), host,)
+        if BITCOIN_RPC_PORT:
+            host = "%s:%s" % (host, BITCOIN_RPC_PORT)
+        service_url = "%s://%s" % (BITCOIN_RPC_SCHEME, host)
+        return Proxy(service_url=service_url)
+
+
 @riprova.retry(
     timeout=TIMEOUT,
     backoff=riprova.ExponentialBackOff(),
@@ -156,19 +173,8 @@ def bitcoinrpc(*args) -> RpcResult:
     if logger.isEnabledFor(logging.DEBUG):
         logger.debug("RPC call: " + " ".join(str(a) for a in args))
 
-    bitcoin_conf = bitcoin_conf_path()
-    if bitcoin_conf.exists():
-        proxy = Proxy(btc_conf_file=bitcoin_conf)
-    else:
-        host = BITCOIN_RPC_HOST
-        if BITCOIN_RPC_USER and BITCOIN_RPC_PASSWORD:
-            host = "%s:%s@%s" % (quote(BITCOIN_RPC_USER), quote(BITCOIN_RPC_PASSWORD), host,)
-        if BITCOIN_RPC_PORT:
-            host = "%s:%s" % (host, BITCOIN_RPC_PORT)
-        service_url = "%s://%s" % (BITCOIN_RPC_SCHEME, host)
-        proxy = Proxy(service_url=service_url)
+    result = rpc_client().call(*args)
 
-    result = proxy.call(*args)
     logger.debug("Result:   %s", result)
     return result
 

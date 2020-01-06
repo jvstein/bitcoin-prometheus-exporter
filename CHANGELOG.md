@@ -7,6 +7,7 @@ Changes to the project.
 - Switch to python 3.8 and alpine for base image.
 - Update docker container to use `nobody` instead of default `root` account.
 - Support loading bitcoin config from `BITCOIN_CONF_PATH` environment variable.
+- Reuse the `Proxy` RPC client to avoid repeatedly looking for config file.
 
 
 ## [0.4.0] - 2020-01-05
