@@ -7,6 +7,7 @@ import time
 import os
 import signal
 import sys
+import socket
 
 from datetime import datetime
 from functools import lru_cache
@@ -125,6 +126,7 @@ LOG_LEVEL = os.environ.get("LOG_LEVEL", "INFO")
 RETRY_EXCEPTIONS = (
     InWarmupError,
     ConnectionError,
+    socket.timeout
 )
 
 RpcResult = Union[Dict[str, Any], List[Any], str, int, float, bool, None]
