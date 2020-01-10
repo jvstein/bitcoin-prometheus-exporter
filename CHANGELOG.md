@@ -3,6 +3,9 @@ Changes to the project.
 
 ## [Unreleased]
 
+## Fixed
+- Avoid crash on `socket.timeout` errors. Retry the request in that case.
+
 ## Changed
 - Switch to python 3.8 and alpine for base image.
 - Update docker container to use `nobody` instead of default `root` account.
