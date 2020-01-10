@@ -154,7 +154,7 @@ def rpc_client_factory():
     bitcoin_conf: Path = bitcoin_conf_path()
     if bitcoin_conf.exists():
         logger.info("Using config file: %s", bitcoin_conf)
-        return lambda: Proxy(btc_conf_file=bitcoin_conf)
+        return lambda: Proxy(btc_conf_file=bitcoin_conf, timeout=TIMEOUT)
     else:
         host = BITCOIN_RPC_HOST
         if BITCOIN_RPC_USER and BITCOIN_RPC_PASSWORD:
@@ -162,7 +162,7 @@ def rpc_client_factory():
         if BITCOIN_RPC_PORT:
             host = "%s:%s" % (host, BITCOIN_RPC_PORT)
         service_url = "%s://%s" % (BITCOIN_RPC_SCHEME, host)
-        return lambda: Proxy(service_url=service_url)
+        return lambda: Proxy(service_url=service_url, timeout=TIMEOUT)
 
 
 def rpc_client():

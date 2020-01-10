@@ -3,6 +3,9 @@ Changes to the project.
 
 ## [Unreleased]
 
+## Changed
+- Pass `TIMEOUT` environment value to bitcoin client as well as retry library.
+
 ## Fixed
 - Avoid crash on `socket.timeout` errors. Retry the request in that case.
 
