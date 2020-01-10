@@ -3,9 +3,6 @@ Changes to the project.
 
 ## [Unreleased]
 
-## Changed
-- Pass `TIMEOUT` environment value to bitcoin client as well as retry library.
-
 ## Fixed
 - Avoid crash on `socket.timeout` errors. Retry the request in that case.
 
@@ -16,6 +13,7 @@ Changes to the project.
 - Reuse the `Proxy` RPC client to avoid repeatedly looking for config file.
 - Config file examples in the docker-compose file.
 - Retry on `ConnectionError`, not just `ConnectionRefusedError`.
+- Pass `TIMEOUT` environment value to bitcoin client as well as retry library.
 
 
 ## [0.4.0] - 2020-01-05
