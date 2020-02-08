@@ -11,7 +11,6 @@ import socket
 
 from datetime import datetime
 from functools import lru_cache
-from pathlib import Path
 from typing import Any
 from typing import Dict
 from typing import List
@@ -114,7 +113,6 @@ BITCOIN_RPC_HOST = os.environ.get("BITCOIN_RPC_HOST", "localhost")
 BITCOIN_RPC_PORT = os.environ.get("BITCOIN_RPC_PORT", "8332")
 BITCOIN_RPC_USER = os.environ.get("BITCOIN_RPC_USER")
 BITCOIN_RPC_PASSWORD = os.environ.get("BITCOIN_RPC_PASSWORD")
-BITCOIN_CONF_PATH = os.environ.get("BITCOIN_CONF_PATH")
 SMART_FEES = [int(f) for f in os.environ.get("SMARTFEE_BLOCKS", "2,3,5,20").split(",")]
 REFRESH_SECONDS = float(os.environ.get("REFRESH_SECONDS", "300"))
 METRICS_PORT = int(os.environ.get("METRICS_PORT", "8334"))
@@ -142,28 +140,24 @@ def on_retry(err: Exception, next_try: float) -> None:
 def error_evaluator(e: Exception) -> bool:
     return isinstance(e, RETRY_EXCEPTIONS)
 
-
-def bitcoin_conf_path() -> Path:
-    if BITCOIN_CONF_PATH is not None:
-        return Path(BITCOIN_CONF_PATH)
-    return Path.home() / ".bitcoin" / "bitcoin.conf"
+class MonitorProxy(Proxy):
+        def __init__(self):
+            if BITCOIN_RPC_PASSWORD:
+                host = BITCOIN_RPC_HOST
+                if BITCOIN_RPC_USER and BITCOIN_RPC_PASSWORD:
+                    host = "%s:%s@%s" % (quote(BITCOIN_RPC_USER), quote(BITCOIN_RPC_PASSWORD), host,)
+                if BITCOIN_RPC_PORT:
+                    host = "%s:%s" % (host, BITCOIN_RPC_PORT)
+                service_url = "%s://%s" % (BITCOIN_RPC_SCHEME, host)
+                super(MonitorProxy, self).__init__(service_url=service_url, timeout=TIMEOUT)
+            else:
+                logger.info("Using config file")
+                super(MonitorProxy, self).__init__(timeout=TIMEOUT)
 
 
 @lru_cache(maxsize=1)
 def rpc_client_factory():
-    bitcoin_conf: Path = bitcoin_conf_path()
-    if bitcoin_conf.exists():
-        logger.info("Using config file: %s", bitcoin_conf)
-        return lambda: Proxy(btc_conf_file=bitcoin_conf, timeout=TIMEOUT)
-    else:
-        host = BITCOIN_RPC_HOST
-        if BITCOIN_RPC_USER and BITCOIN_RPC_PASSWORD:
-            host = "%s:%s@%s" % (quote(BITCOIN_RPC_USER), quote(BITCOIN_RPC_PASSWORD), host,)
-        if BITCOIN_RPC_PORT:
-            host = "%s:%s" % (host, BITCOIN_RPC_PORT)
-        service_url = "%s://%s" % (BITCOIN_RPC_SCHEME, host)
-        return lambda: Proxy(service_url=service_url, timeout=TIMEOUT)
-
+    return lambda: MonitorProxy()
 
 def rpc_client():
     return rpc_client_factory()()
