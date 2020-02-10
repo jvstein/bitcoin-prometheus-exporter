@@ -11,7 +11,6 @@ import socket
 
 from datetime import datetime
 from functools import lru_cache
-from pathlib import Path
 from typing import Any
 from typing import Dict
 from typing import List
@@ -123,11 +122,7 @@ TIMEOUT = int(os.environ.get("TIMEOUT", 30))
 LOG_LEVEL = os.environ.get("LOG_LEVEL", "INFO")
 
 
-RETRY_EXCEPTIONS = (
-    InWarmupError,
-    ConnectionError,
-    socket.timeout
-)
+RETRY_EXCEPTIONS = (InWarmupError, ConnectionError, socket.timeout)
 
 RpcResult = Union[Dict[str, Any], List[Any], str, int, float, bool, None]
 
@@ -143,25 +138,28 @@ def error_evaluator(e: Exception) -> bool:
     return isinstance(e, RETRY_EXCEPTIONS)
 
 
-def bitcoin_conf_path() -> Path:
-    if BITCOIN_CONF_PATH is not None:
-        return Path(BITCOIN_CONF_PATH)
-    return Path.home() / ".bitcoin" / "bitcoin.conf"
-
-
 @lru_cache(maxsize=1)
 def rpc_client_factory():
-    bitcoin_conf: Path = bitcoin_conf_path()
-    if bitcoin_conf.exists():
-        logger.info("Using config file: %s", bitcoin_conf)
-        return lambda: Proxy(btc_conf_file=bitcoin_conf, timeout=TIMEOUT)
+    # Configuration is done in this order of precedence:
+    #   - Explicit config file.
+    #   - BITCOIN_RPC_USER and BITCOIN_RPC_PASSWORD environment variables.
+    #   - Default bitcoin config file (as handled by Proxy.__init__).
+    use_conf = (
+        (BITCOIN_CONF_PATH is not None)
+        or (BITCOIN_RPC_USER is None)
+        or (BITCOIN_RPC_PASSWORD is None)
+    )
+
+    if use_conf:
+        logger.info("Using config file: %s", BITCOIN_CONF_PATH or "<default>")
+        return lambda: Proxy(btc_conf_file=BITCOIN_CONF_PATH, timeout=TIMEOUT)
     else:
         host = BITCOIN_RPC_HOST
-        if BITCOIN_RPC_USER and BITCOIN_RPC_PASSWORD:
-            host = "%s:%s@%s" % (quote(BITCOIN_RPC_USER), quote(BITCOIN_RPC_PASSWORD), host,)
+        host = "%s:%s@%s" % (quote(BITCOIN_RPC_USER), quote(BITCOIN_RPC_PASSWORD), host)
         if BITCOIN_RPC_PORT:
             host = "%s:%s" % (host, BITCOIN_RPC_PORT)
         service_url = "%s://%s" % (BITCOIN_RPC_SCHEME, host)
+        logger.info("Using environment configuration")
         return lambda: Proxy(service_url=service_url, timeout=TIMEOUT)
 
 
