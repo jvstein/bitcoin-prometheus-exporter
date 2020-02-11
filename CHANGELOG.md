@@ -3,17 +3,26 @@ Changes to the project.
 
 ## [Unreleased]
 
+## [0.5.0] - 2020-02-10
+
 ## Fixed
 - Avoid crash on `socket.timeout` errors. Retry the request in that case.
 
 ## Changed
 - Switch to python 3.8 and alpine for base image.
 - Update docker container to use `nobody` instead of default `root` account.
-- Support loading bitcoin config from `BITCOIN_CONF_PATH` environment variable.
+- Update shebang to use PATH ([#6][pr-6]).
+- Support loading bitcoin config from `BITCOIN_CONF_PATH` environment variable ([#7][pr-7]).
 - Reuse the `Proxy` RPC client to avoid repeatedly looking for config file.
 - Config file examples in the docker-compose file.
-- Retry on `ConnectionError`, not just `ConnectionRefusedError`.
+- Retry on `ConnectionError`, not just `ConnectionRefusedError` ([#9][pr-9]).
 - Pass `TIMEOUT` environment value to bitcoin client as well as retry library.
+- Rely on python-bitcoinlib to handle bitcoin config location detection ([#10][pr-10]).
+
+[pr-6]: https://github.com/jvstein/bitcoin-prometheus-exporter/pull/6
+[pr-7]: https://github.com/jvstein/bitcoin-prometheus-exporter/pull/7
+[pr-9]: https://github.com/jvstein/bitcoin-prometheus-exporter/pull/9
+[pr-10]: https://github.com/jvstein/bitcoin-prometheus-exporter/pull/10
 
 
 ## [0.4.0] - 2020-01-05
@@ -105,7 +114,8 @@ as-is in the first commit.
 
 [python-bitcoinlib]: https://github.com/petertodd/python-bitcoinlib
 
-[Unreleased]: https://github.com/jvstein/bitcoin-prometheus-exporter/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/jvstein/bitcoin-prometheus-exporter/compare/v0.5.0...HEAD
+[0.4.0]: https://github.com/jvstein/bitcoin-prometheus-exporter/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/jvstein/bitcoin-prometheus-exporter/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/jvstein/bitcoin-prometheus-exporter/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/jvstein/bitcoin-prometheus-exporter/compare/v0.1.0...v0.2.0
