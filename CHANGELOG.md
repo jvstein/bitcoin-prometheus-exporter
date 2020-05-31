@@ -3,12 +3,17 @@ Changes to the project.
 
 ## [Unreleased]
 
+### Added
+- Support changing bind address with `METRICS_ADDR` environment variable ([#11][pr-11]).
+
+[pr-11]: https://github.com/jvstein/bitcoin-prometheus-exporter/pull/11
+
 ## [0.5.0] - 2020-02-10
 
-## Fixed
+### Fixed
 - Avoid crash on `socket.timeout` errors. Retry the request in that case.
 
-## Changed
+### Changed
 - Switch to python 3.8 and alpine for base image.
 - Update docker container to use `nobody` instead of default `root` account.
 - Update shebang to use PATH ([#6][pr-6]).
