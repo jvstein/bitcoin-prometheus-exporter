@@ -1,4 +1,18 @@
 #!/usr/bin/env python3
+# bitcoind-monitor.py
+#
+# An exporter for Prometheus and Bitcoin Core.
+#
+# Copyright 2018 Kevin M. Gallagher
+# Copyright 2019,2020 Jeff Stein
+#
+# Published at https://github.com/jvstein/bitcoin-prometheus-exporter
+# Licensed under BSD 3-clause (see LICENSE).
+#
+# Dependency licenses (retrieved 2020-05-31):
+#   prometheus_client: Apache 2.0
+#   python-bitcoinlib: LGPLv3
+#   riprova: MIT
 
 import json
 import logging
