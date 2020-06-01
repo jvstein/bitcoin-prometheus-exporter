@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 import json
 import logging
@@ -156,10 +155,10 @@ def rpc_client_factory():
         return lambda: Proxy(btc_conf_file=BITCOIN_CONF_PATH, timeout=TIMEOUT)
     else:
         host = BITCOIN_RPC_HOST
-        host = "%s:%s@%s" % (quote(BITCOIN_RPC_USER), quote(BITCOIN_RPC_PASSWORD), host)
+        host = "{}:{}@{}".format(quote(BITCOIN_RPC_USER), quote(BITCOIN_RPC_PASSWORD), host)
         if BITCOIN_RPC_PORT:
-            host = "%s:%s" % (host, BITCOIN_RPC_PORT)
-        service_url = "%s://%s" % (BITCOIN_RPC_SCHEME, host)
+            host = f"{host}:{BITCOIN_RPC_PORT}"
+        service_url = f"{BITCOIN_RPC_SCHEME}://{host}"
         logger.info("Using environment configuration")
         return lambda: Proxy(service_url=service_url, timeout=TIMEOUT)
 
