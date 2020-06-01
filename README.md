@@ -5,7 +5,7 @@ A [Prometheus] exporter for [Bitcoin Core] nodes written in python and packaged 
 A rudimentary Grafana [dashboard] is available in the [`dashboard/bitcoin-grafana.json`](dashboard/bitcoin-grafana.json)
 file.
 
-The main script is a modified version of [`bitcoin-monitor.md`][source-gist], updated to remove the need for the
+The main script is a modified version of [`bitcoin-monitor.py`][source-gist], updated to remove the need for the
 `bitcoin-cli` binary, packaged into a [Docker image][docker-image], and expanded to export additional metrics.
 
 [Bitcoin Core]: https://github.com/bitcoin/bitcoin
