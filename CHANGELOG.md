@@ -5,6 +5,7 @@ Changes to the project.
 
 ### Added
 - Support changing bind address with `METRICS_ADDR` environment variable ([#11][pr-11]).
+- Add `requirements.txt` file.
 
 [pr-11]: https://github.com/jvstein/bitcoin-prometheus-exporter/pull/11
 
