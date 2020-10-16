@@ -8,6 +8,9 @@ Changes to the project.
 
 [pr-11]: https://github.com/jvstein/bitcoin-prometheus-exporter/pull/11
 
+## Changed
+- Modify type annotations to run on python 3.5.
+
 ## [0.5.0] - 2020-02-10
 
 ### Fixed

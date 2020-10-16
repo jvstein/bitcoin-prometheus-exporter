@@ -53,7 +53,7 @@ BITCOIN_HASHPS = Gauge(
     "bitcoin_hashps", "Estimated network hash rate per second for the last 120 blocks"
 )
 
-BITCOIN_ESTIMATED_SMART_FEE_GAUGES: Dict[int, Gauge] = {}
+BITCOIN_ESTIMATED_SMART_FEE_GAUGES = {}  # type: Dict[int, Gauge]
 
 BITCOIN_WARNINGS = Counter("bitcoin_warnings", "Number of network or blockchain warnings detected")
 BITCOIN_UPTIME = Gauge("bitcoin_uptime", "Number of seconds the Bitcoin daemon has been running")
