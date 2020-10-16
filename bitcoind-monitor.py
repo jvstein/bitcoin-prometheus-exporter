@@ -171,8 +171,8 @@ def rpc_client_factory():
         host = BITCOIN_RPC_HOST
         host = "{}:{}@{}".format(quote(BITCOIN_RPC_USER), quote(BITCOIN_RPC_PASSWORD), host)
         if BITCOIN_RPC_PORT:
-            host = f"{host}:{BITCOIN_RPC_PORT}"
-        service_url = f"{BITCOIN_RPC_SCHEME}://{host}"
+            host = "{}:{}".format(host, BITCOIN_RPC_PORT)
+        service_url = "{}://{}".format(BITCOIN_RPC_SCHEME, host)
         logger.info("Using environment configuration")
         return lambda: Proxy(service_url=service_url, timeout=TIMEOUT)
 
