@@ -6,8 +6,10 @@ Changes to the project.
 ### Added
 - Support changing bind address with `METRICS_ADDR` environment variable ([#11][pr-11]).
 - Add `requirements.txt` file.
+- Set default `bad_reason` to "manually added" to support Bitcoin Core 0.20.1 ([#16][pr-16]).
 
 [pr-11]: https://github.com/jvstein/bitcoin-prometheus-exporter/pull/11
+[pr-16]: https://github.com/jvstein/bitcoin-prometheus-exporter/pull/16
 
 ## Changed
 - Modify type annotations to run on python 3.5.

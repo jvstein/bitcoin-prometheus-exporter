@@ -255,10 +255,10 @@ def refresh_metrics() -> None:
         do_smartfee(smartfee)
 
     for ban in banned:
-        BITCOIN_BAN_CREATED.labels(address=ban["address"], reason=ban["ban_reason"]).set(
+        BITCOIN_BAN_CREATED.labels(address=ban["address"], reason=ban.get("ban_reason", "manually added")).set(
             ban["ban_created"]
         )
-        BITCOIN_BANNED_UNTIL.labels(address=ban["address"], reason=ban["ban_reason"]).set(
+        BITCOIN_BANNED_UNTIL.labels(address=ban["address"], reason=ban.get("ban_reason", "manually added")).set(
             ban["banned_until"]
         )
 
