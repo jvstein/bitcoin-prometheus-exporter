@@ -8,8 +8,12 @@ Changes to the project.
 - Add `requirements.txt` file.
 - Set default `bad_reason` to "manually added" to support Bitcoin Core 0.20.1 ([#16][pr-16]).
 
+### Fixed
+- Fix port number in README ([#17][pr-17]).
+
 [pr-11]: https://github.com/jvstein/bitcoin-prometheus-exporter/pull/11
 [pr-16]: https://github.com/jvstein/bitcoin-prometheus-exporter/pull/16
+[pr-17]: https://github.com/jvstein/bitcoin-prometheus-exporter/pull/17
 
 ## Changed
 - Modify type annotations to run on python 3.5.
