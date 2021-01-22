@@ -28,7 +28,6 @@ from typing import Any
 from typing import Dict
 from typing import List
 from typing import Union
-from urllib.parse import quote
 
 import riprova
 
@@ -169,7 +168,7 @@ def rpc_client_factory():
         return lambda: Proxy(btc_conf_file=BITCOIN_CONF_PATH, timeout=TIMEOUT)
     else:
         host = BITCOIN_RPC_HOST
-        host = "{}:{}@{}".format(quote(BITCOIN_RPC_USER), quote(BITCOIN_RPC_PASSWORD), host)
+        host = "{}:{}@{}".format(BITCOIN_RPC_USER, BITCOIN_RPC_PASSWORD, host)
         if BITCOIN_RPC_PORT:
             host = "{}:{}".format(host, BITCOIN_RPC_PORT)
         service_url = "{}://{}".format(BITCOIN_RPC_SCHEME, host)
