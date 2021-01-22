@@ -7,6 +7,7 @@ Changes to the project.
 - Support changing bind address with `METRICS_ADDR` environment variable ([#11][pr-11]).
 - Add `requirements.txt` file.
 - Set default `bad_reason` to "manually added" to support Bitcoin Core 0.20.1 ([#16][pr-16]).
+- Remove premature URL encoding of bitcoind rpc credentials ([#18][pr-18]).
 
 ### Fixed
 - Fix port number in README ([#17][pr-17]).
@@ -14,6 +15,7 @@ Changes to the project.
 [pr-11]: https://github.com/jvstein/bitcoin-prometheus-exporter/pull/11
 [pr-16]: https://github.com/jvstein/bitcoin-prometheus-exporter/pull/16
 [pr-17]: https://github.com/jvstein/bitcoin-prometheus-exporter/pull/17
+[pr-18]: https://github.com/jvstein/bitcoin-prometheus-exporter/pull/18
 
 ## Changed
 - Modify type annotations to run on python 3.5.

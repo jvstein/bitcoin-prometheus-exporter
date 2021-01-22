@@ -17,8 +17,8 @@ services:
       - "8334:8334"
     environment:
       BITCOIN_RPC_HOST: bitcoind
-      BITCOIN_RPC_USER: alice
-      BITCOIN_RPC_PASSWORD: "password"
+      BITCOIN_RPC_USER: "alice"
+      BITCOIN_RPC_PASSWORD: "password=123&z!=@e"
       #BITCOIN_CONF_PATH: /etc/bitcoin/bitcoin.conf
       REFRESH_SECONDS: 1
       LOG_LEVEL: "INFO"
