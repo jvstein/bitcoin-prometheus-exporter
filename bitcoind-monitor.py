@@ -121,6 +121,8 @@ BITCOIN_VERIFICATION_PROGRESS = Gauge(
     "bitcoin_verification_progress", "Estimate of verification progress [0..1]"
 )
 
+BITCOIN_RPC_ACTIVE = Gauge("bitcoin_rpc_active", "Number of RPC calls being processed")
+
 EXPORTER_ERRORS = Counter(
     "bitcoin_exporter_errors", "Number of errors encountered by the exporter", labelnames=["type"]
 )
@@ -246,6 +248,7 @@ def refresh_metrics() -> None:
     chaintips = len(bitcoinrpc("getchaintips"))
     mempool = bitcoinrpc("getmempoolinfo")
     nettotals = bitcoinrpc("getnettotals")
+    rpcinfo = bitcoinrpc("getrpcinfo")
     latest_blockstats = getblockstats(str(blockchaininfo["bestblockhash"]))
     hashps_120 = float(bitcoinrpc("getnetworkhashps", 120))  # 120 is the default
     hashps_neg1 = float(bitcoinrpc("getnetworkhashps", -1))
@@ -310,6 +313,9 @@ def refresh_metrics() -> None:
         BITCOIN_LATEST_BLOCK_OUTPUTS.set(latest_blockstats["outs"])
         BITCOIN_LATEST_BLOCK_VALUE.set(latest_blockstats["total_out"] / SATS_PER_COIN)
         BITCOIN_LATEST_BLOCK_FEE.set(latest_blockstats["totalfee"] / SATS_PER_COIN)
+
+    # Subtract one because we don't want to count the "getrpcinfo" call itself
+    BITCOIN_RPC_ACTIVE.set(len(rpcinfo["active_commands"]) - 1)
 
 
 def sigterm_handler(signal, frame) -> None:
