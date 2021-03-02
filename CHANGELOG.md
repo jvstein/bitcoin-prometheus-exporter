@@ -6,6 +6,9 @@ Changes to the project.
 ### Added
 - Add `bitcoin_rpc_active` stat for number of active RPC calls.
   - [Source](https://github.com/EchterAgo/bitcoin-prometheus-exporter/commit/cc2a804e214556414c7184830166242c34d42457)
+- Add `bitcoin_txcount` stat for total number of transactions since the genesis block.
+  - [Source 1](https://github.com/EchterAgo/bitcoin-prometheus-exporter/commit/b368138574641e4e26a8a2dfc8be6eede82f4a73)
+  - [Source 2](https://github.com/EchterAgo/bitcoin-prometheus-exporter/commit/a9a6b250f463906c1b1f9446d9a689c78c4add6d)
 
 ### Changed
 - Update metrics on HTTP request, instead of timer ([#12][issue-12]).
