@@ -28,11 +28,12 @@ from typing import Any
 from typing import Dict
 from typing import List
 from typing import Union
+from wsgiref.simple_server import make_server
 
 import riprova
 
-from bitcoin.rpc import InWarmupError, Proxy
-from prometheus_client import start_http_server, Gauge, Counter
+from bitcoin.rpc import JSONRPCError, InWarmupError, Proxy
+from prometheus_client import make_wsgi_app, Gauge, Counter
 
 
 logger = logging.getLogger("bitcoin-exporter")
@@ -132,11 +133,11 @@ BITCOIN_RPC_USER = os.environ.get("BITCOIN_RPC_USER")
 BITCOIN_RPC_PASSWORD = os.environ.get("BITCOIN_RPC_PASSWORD")
 BITCOIN_CONF_PATH = os.environ.get("BITCOIN_CONF_PATH")
 SMART_FEES = [int(f) for f in os.environ.get("SMARTFEE_BLOCKS", "2,3,5,20").split(",")]
-REFRESH_SECONDS = float(os.environ.get("REFRESH_SECONDS", "300"))
 METRICS_ADDR = os.environ.get("METRICS_ADDR", "")  # empty = any address
 METRICS_PORT = int(os.environ.get("METRICS_PORT", "8334"))
 RETRIES = int(os.environ.get("RETRIES", 5))
 TIMEOUT = int(os.environ.get("TIMEOUT", 30))
+RATE_LIMIT_SECONDS = int(os.environ.get("RATE_LIMIT", 5))
 LOG_LEVEL = os.environ.get("LOG_LEVEL", "INFO")
 
 
@@ -332,10 +333,17 @@ def main():
     # Handle SIGTERM gracefully.
     signal.signal(signal.SIGTERM, sigterm_handler)
 
-    # Start up the server to expose the metrics.
-    start_http_server(addr=METRICS_ADDR, port=METRICS_PORT)
-    while True:
+    app = make_wsgi_app()
+
+    last_refresh = datetime.fromtimestamp(0)
+
+    def refresh_app(*args, **kwargs):
+        nonlocal last_refresh
         process_start = datetime.now()
+
+        # Only refresh every RATE_LIMIT_SECONDS seconds.
+        if (process_start - last_refresh).total_seconds() < RATE_LIMIT_SECONDS:
+            return app(*args, **kwargs)
 
         # Allow riprova.MaxRetriesExceeded and unknown exceptions to crash the process.
         try:
@@ -343,15 +351,22 @@ def main():
         except riprova.exceptions.RetryError as e:
             logger.error("Refresh failed during retry. Cause: " + str(e))
             exception_count(e)
+        except JSONRPCError as e:
+            logger.debug("Bitcoin RPC error refresh", exc_info=True)
+            exception_count(e)
         except json.decoder.JSONDecodeError as e:
             logger.error("RPC call did not return JSON. Bad credentials? " + str(e))
             sys.exit(1)
 
         duration = datetime.now() - process_start
         PROCESS_TIME.inc(duration.total_seconds())
-        logger.info("Refresh took %s seconds, sleeping for %s seconds", duration, REFRESH_SECONDS)
+        logger.info("Refresh took %s seconds", duration)
+        last_refresh = process_start
 
-        time.sleep(REFRESH_SECONDS)
+        return app(*args, **kwargs)
+
+    httpd = make_server(METRICS_ADDR, METRICS_PORT, refresh_app)
+    httpd.serve_forever()
 
 
 if __name__ == "__main__":
