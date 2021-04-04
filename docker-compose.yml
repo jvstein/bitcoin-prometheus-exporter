@@ -14,7 +14,7 @@ services:
     image: jvstein/bitcoin-prometheus-exporter:latest
     build: .
     ports:
-      - "8334:8334"
+      - "9332:9332"
     environment:
       BITCOIN_RPC_HOST: bitcoind
       BITCOIN_RPC_USER: "alice"
