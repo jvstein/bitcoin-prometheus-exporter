@@ -20,7 +20,7 @@ The main script is a modified version of [`bitcoin-monitor.py`][source-gist], up
 ```
 docker run \
     --name=bitcoin-exporter \
-    -p 8334:8334 \
+    -p 9332:9332 \
     -e BITCOIN_RPC_HOST=bitcoin-node \
     -e BITCOIN_RPC_USER=alice \
     -e BITCOIN_RPC_PASSWORD=DONT_USE_THIS_YOU_WILL_GET_ROBBED_8ak1gI25KFTvjovL3gAM967mies3E= \
