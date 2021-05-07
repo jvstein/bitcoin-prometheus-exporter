@@ -7,6 +7,8 @@ Changes to the project.
 - Update metrics on HTTP request, instead of timer ([#12][issue-12]).
   - [Source 1](https://github.com/EchterAgo/bitcoin-prometheus-exporter/commit/c8382240b7a931503dfdd4c8cf89a8415326caf6)
   - [Source 2](https://github.com/EchterAgo/bitcoin-prometheus-exporter/commit/89212072386307fcb6a9f062ee7f958a266b1075)
+- Improve performance of block statistics.
+  - [Source](https://github.com/EchterAgo/bitcoin-prometheus-exporter/commit/9c018bf081bfdc604af03d8dedd125197401b2de)
 
 [issue-12]: https://github.com/jvstein/bitcoin-prometheus-exporter/issues/12
 

@@ -101,6 +101,9 @@ BITCOIN_LATEST_BLOCK_OUTPUTS = Gauge(
 BITCOIN_LATEST_BLOCK_VALUE = Gauge(
     "bitcoin_latest_block_value", "Bitcoin value of all transactions in the latest block"
 )
+BITCOIN_LATEST_BLOCK_FEE = Gauge(
+    "bitcoin_latest_block_fee", "Total fee to process the latest block"
+)
 
 BITCOIN_BAN_CREATED = Gauge(
     "bitcoin_ban_created", "Time the ban was created", labelnames=["address", "reason"]
@@ -125,6 +128,7 @@ PROCESS_TIME = Counter(
     "bitcoin_exporter_process_time", "Time spent processing metrics from bitcoin node"
 )
 
+SATS_PER_COIN = 1e8
 
 BITCOIN_RPC_SCHEME = os.environ.get("BITCOIN_RPC_SCHEME", "http")
 BITCOIN_RPC_HOST = os.environ.get("BITCOIN_RPC_HOST", "localhost")
@@ -202,11 +206,16 @@ def bitcoinrpc(*args) -> RpcResult:
     return result
 
 
-def get_block(block_hash: str):
+@lru_cache(maxsize=1)
+def getblockstats(block_hash: str):
     try:
-        block = bitcoinrpc("getblock", block_hash, 2)
+        block = bitcoinrpc(
+            "getblockstats",
+            block_hash,
+            ["total_size", "total_weight", "totalfee", "txs", "height", "ins", "outs", "total_out"],
+        )
     except Exception:
-        logger.exception("Failed to retrieve block " + block_hash + " from bitcoind.")
+        logger.exception("Failed to retrieve block " + block_hash + " statistics from bitcoind.")
         return None
     return block
 
@@ -237,7 +246,7 @@ def refresh_metrics() -> None:
     chaintips = len(bitcoinrpc("getchaintips"))
     mempool = bitcoinrpc("getmempoolinfo")
     nettotals = bitcoinrpc("getnettotals")
-    latest_block = get_block(str(blockchaininfo["bestblockhash"]))
+    latest_blockstats = getblockstats(str(blockchaininfo["bestblockhash"]))
     hashps_120 = float(bitcoinrpc("getnetworkhashps", 120))  # 120 is the default
     hashps_neg1 = float(bitcoinrpc("getnetworkhashps", -1))
     hashps_1 = float(bitcoinrpc("getnetworkhashps", 1))
@@ -292,23 +301,15 @@ def refresh_metrics() -> None:
     BITCOIN_TOTAL_BYTES_RECV.set(nettotals["totalbytesrecv"])
     BITCOIN_TOTAL_BYTES_SENT.set(nettotals["totalbytessent"])
 
-    if latest_block is not None:
-        BITCOIN_LATEST_BLOCK_SIZE.set(latest_block["size"])
-        BITCOIN_LATEST_BLOCK_TXS.set(latest_block["nTx"])
-        BITCOIN_LATEST_BLOCK_HEIGHT.set(latest_block["height"])
-        BITCOIN_LATEST_BLOCK_WEIGHT.set(latest_block["weight"])
-        inputs, outputs = 0, 0
-        value = 0
-        for tx in latest_block["tx"]:
-            i = len(tx["vin"])
-            inputs += i
-            o = len(tx["vout"])
-            outputs += o
-            value += sum(o["value"] for o in tx["vout"])
-
-        BITCOIN_LATEST_BLOCK_INPUTS.set(inputs)
-        BITCOIN_LATEST_BLOCK_OUTPUTS.set(outputs)
-        BITCOIN_LATEST_BLOCK_VALUE.set(value)
+    if latest_blockstats is not None:
+        BITCOIN_LATEST_BLOCK_SIZE.set(latest_blockstats["total_size"])
+        BITCOIN_LATEST_BLOCK_TXS.set(latest_blockstats["txs"])
+        BITCOIN_LATEST_BLOCK_HEIGHT.set(latest_blockstats["height"])
+        BITCOIN_LATEST_BLOCK_WEIGHT.set(latest_blockstats["total_weight"])
+        BITCOIN_LATEST_BLOCK_INPUTS.set(latest_blockstats["ins"])
+        BITCOIN_LATEST_BLOCK_OUTPUTS.set(latest_blockstats["outs"])
+        BITCOIN_LATEST_BLOCK_VALUE.set(latest_blockstats["total_out"] / SATS_PER_COIN)
+        BITCOIN_LATEST_BLOCK_FEE.set(latest_blockstats["totalfee"] / SATS_PER_COIN)
 
 
 def sigterm_handler(signal, frame) -> None:
