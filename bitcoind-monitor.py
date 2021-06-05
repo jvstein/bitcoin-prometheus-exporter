@@ -71,7 +71,9 @@ BITCOIN_MEMPOOL_SIZE = Gauge(
     "bitcoin_mempool_size", "Number of unconfirmed transactions in mempool"
 )
 BITCOIN_MEMPOOL_USAGE = Gauge("bitcoin_mempool_usage", "Total memory usage for the mempool")
-BITCOIN_MEMPOOL_UNBROADCAST = Gauge("bitcoin_mempool_unbroadcast", "Number of transactions waiting for acknowledgment")
+BITCOIN_MEMPOOL_UNBROADCAST = Gauge(
+    "bitcoin_mempool_unbroadcast", "Number of transactions waiting for acknowledgment"
+)
 
 BITCOIN_LATEST_BLOCK_HEIGHT = Gauge(
     "bitcoin_latest_block_height", "Height or index of latest block"
@@ -261,12 +263,12 @@ def refresh_metrics() -> None:
         do_smartfee(smartfee)
 
     for ban in banned:
-        BITCOIN_BAN_CREATED.labels(address=ban["address"], reason=ban.get("ban_reason", "manually added")).set(
-            ban["ban_created"]
-        )
-        BITCOIN_BANNED_UNTIL.labels(address=ban["address"], reason=ban.get("ban_reason", "manually added")).set(
-            ban["banned_until"]
-        )
+        BITCOIN_BAN_CREATED.labels(
+            address=ban["address"], reason=ban.get("ban_reason", "manually added")
+        ).set(ban["ban_created"])
+        BITCOIN_BANNED_UNTIL.labels(
+            address=ban["address"], reason=ban.get("ban_reason", "manually added")
+        ).set(ban["banned_until"])
 
     if networkinfo["warnings"]:
         BITCOIN_WARNINGS.inc()

@@ -2,26 +2,27 @@
 default_language_version:
   python: python3.8
 repos:
-  - repo: git@github.com:humitos/mirrors-autoflake.git
-    rev: v1.3
+  - repo: https://github.com/myint/autoflake
+    rev: v1.4
     hooks:
       - id: autoflake
         args: ['--in-place', '--remove-all-unused-imports', '--remove-unused-variables']
+  # Only using py3-plus to avoid killing python3.5 support with f-strings.
   - repo: https://github.com/asottile/pyupgrade
-    rev: v2.4.4
+    rev: v2.19.1
     hooks:
       - id: pyupgrade
-        args: ['--py36-plus']
+        args: ['--py3-plus']
   - repo: https://github.com/psf/black
-    rev: 19.10b0
+    rev: 21.5b2
     hooks:
       - id: black
   - repo: https://gitlab.com/pycqa/flake8
-    rev: 3.8.2
+    rev: 3.9.2
     hooks:
       - id: flake8
         args: ['--config=.flake8']
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v0.770
+    rev: v0.812
     hooks:
       - id: mypy
