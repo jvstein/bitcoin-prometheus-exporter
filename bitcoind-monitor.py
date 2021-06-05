@@ -42,6 +42,8 @@ logger = logging.getLogger("bitcoin-exporter")
 BITCOIN_BLOCKS = Gauge("bitcoin_blocks", "Block height")
 BITCOIN_DIFFICULTY = Gauge("bitcoin_difficulty", "Difficulty")
 BITCOIN_PEERS = Gauge("bitcoin_peers", "Number of peers")
+BITCOIN_CONN_IN = Gauge("bitcoin_conn_in", "Number of connections in")
+BITCOIN_CONN_OUT = Gauge("bitcoin_conn_out", "Number of connections out")
 BITCOIN_HASHPS_NEG1 = Gauge(
     "bitcoin_hashps_neg1", "Estimated network hash rate per second since the last difficulty change"
 )
@@ -69,6 +71,7 @@ BITCOIN_MEMPOOL_SIZE = Gauge(
     "bitcoin_mempool_size", "Number of unconfirmed transactions in mempool"
 )
 BITCOIN_MEMPOOL_USAGE = Gauge("bitcoin_mempool_usage", "Total memory usage for the mempool")
+BITCOIN_MEMPOOL_UNBROADCAST = Gauge("bitcoin_mempool_unbroadcast", "Number of transactions waiting for acknowledgment")
 
 BITCOIN_LATEST_BLOCK_HEIGHT = Gauge(
     "bitcoin_latest_block_height", "Height or index of latest block"
@@ -241,6 +244,10 @@ def refresh_metrics() -> None:
     BITCOIN_UPTIME.set(uptime)
     BITCOIN_BLOCKS.set(blockchaininfo["blocks"])
     BITCOIN_PEERS.set(networkinfo["connections"])
+    if "connections_in" in networkinfo:
+        BITCOIN_CONN_IN.set(networkinfo["connections_in"])
+    if "connections_out" in networkinfo:
+        BITCOIN_CONN_OUT.set(networkinfo["connections_out"])
     BITCOIN_DIFFICULTY.set(blockchaininfo["difficulty"])
     BITCOIN_HASHPS.set(hashps_120)
     BITCOIN_HASHPS_NEG1.set(hashps_neg1)
@@ -276,6 +283,8 @@ def refresh_metrics() -> None:
     BITCOIN_MEMPOOL_BYTES.set(mempool["bytes"])
     BITCOIN_MEMPOOL_SIZE.set(mempool["size"])
     BITCOIN_MEMPOOL_USAGE.set(mempool["usage"])
+    if "unbroadcastcount" in mempool:
+        BITCOIN_MEMPOOL_UNBROADCAST.set(mempool["unbroadcastcount"])
 
     BITCOIN_TOTAL_BYTES_RECV.set(nettotals["totalbytesrecv"])
     BITCOIN_TOTAL_BYTES_SENT.set(nettotals["totalbytessent"])
