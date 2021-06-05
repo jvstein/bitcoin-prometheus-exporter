@@ -3,22 +3,27 @@ Changes to the project.
 
 ## [Unreleased]
 
+
+## [0.6.0] - 2021-06-05
+
 ### Added
 - Support changing bind address with `METRICS_ADDR` environment variable ([#11][pr-11]).
 - Add `requirements.txt` file.
 - Set default `bad_reason` to "manually added" to support Bitcoin Core 0.20.1 ([#16][pr-16]).
 - Remove premature URL encoding of bitcoind rpc credentials ([#18][pr-18]).
 
+[pr-11]: https://github.com/jvstein/bitcoin-prometheus-exporter/pull/11
+[pr-16]: https://github.com/jvstein/bitcoin-prometheus-exporter/pull/16
+[pr-18]: https://github.com/jvstein/bitcoin-prometheus-exporter/pull/18
+
 ### Fixed
 - Fix port number in README ([#17][pr-17]).
 
-[pr-11]: https://github.com/jvstein/bitcoin-prometheus-exporter/pull/11
-[pr-16]: https://github.com/jvstein/bitcoin-prometheus-exporter/pull/16
 [pr-17]: https://github.com/jvstein/bitcoin-prometheus-exporter/pull/17
-[pr-18]: https://github.com/jvstein/bitcoin-prometheus-exporter/pull/18
 
 ## Changed
 - Modify type annotations to run on python 3.5.
+
 
 ## [0.5.0] - 2020-02-10
 
@@ -131,7 +136,8 @@ as-is in the first commit.
 
 [python-bitcoinlib]: https://github.com/petertodd/python-bitcoinlib
 
-[Unreleased]: https://github.com/jvstein/bitcoin-prometheus-exporter/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/jvstein/bitcoin-prometheus-exporter/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/jvstein/bitcoin-prometheus-exporter/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/jvstein/bitcoin-prometheus-exporter/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/jvstein/bitcoin-prometheus-exporter/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/jvstein/bitcoin-prometheus-exporter/compare/v0.2.0...v0.3.0
