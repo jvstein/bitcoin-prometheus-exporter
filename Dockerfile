@@ -1,4 +1,4 @@
-FROM python:3.8-alpine
+FROM python:3.8-alpine3.13
 
 LABEL org.opencontainers.image.title "bitcoin-prometheus-exporter"
 LABEL org.opencontainers.image.description "Prometheus exporter for bitcoin nodes"
