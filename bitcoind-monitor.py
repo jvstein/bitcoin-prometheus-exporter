@@ -21,7 +21,7 @@ import os
 import signal
 import sys
 import socket
-
+from decimal import Decimal
 from datetime import datetime
 from functools import lru_cache
 from typing import Any
@@ -123,7 +123,7 @@ PROCESS_TIME = Counter(
     "bitcoin_exporter_process_time", "Time spent processing metrics from bitcoin node"
 )
 
-SATS_PER_COIN = 1e8
+SATS_PER_COIN = Decimal(1e8)
 
 BITCOIN_RPC_SCHEME = os.environ.get("BITCOIN_RPC_SCHEME", "http")
 BITCOIN_RPC_HOST = os.environ.get("BITCOIN_RPC_HOST", "localhost")
@@ -236,17 +236,17 @@ def do_smartfee(num_blocks: int) -> None:
 
 def hashps_gauge_suffix(nblocks):
     if nblocks < 0:
-        return "neg%d" % -nblocks
+        return "_neg%d" % -nblocks
     if nblocks == 120:
         return ""
-    return "%d" % nblocks
+    return "_%d" % nblocks
 
 
 def hashps_gauge(num_blocks: int) -> Gauge:
     gauge = BITCOIN_HASHPS_GAUGES.get(num_blocks)
     if gauge is None:
         gauge = Gauge(
-            "bitcoin_hashps_%s" % hashps_gauge_suffix(num_blocks),
+            "bitcoin_hashps%s" % hashps_gauge_suffix(num_blocks),
             "Estimated network hash rate per second for the last %d blocks" % num_blocks,
         )
         BITCOIN_HASHPS_GAUGES[num_blocks] = gauge
