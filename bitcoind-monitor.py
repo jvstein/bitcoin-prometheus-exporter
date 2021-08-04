@@ -237,10 +237,10 @@ def do_smartfee(num_blocks: int) -> None:
 
 def hashps_gauge_suffix(nblocks):
     if nblocks < 0:
-        return "_NEG%d" % -nblocks
+        return "neg%d" % -nblocks
     if nblocks == 120:
         return ""
-    return "_%d" % nblocks
+    return "%d" % nblocks
 
 
 def hashps_gauge(num_blocks: int) -> Gauge:
