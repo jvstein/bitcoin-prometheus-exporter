@@ -28,11 +28,12 @@ from typing import Any
 from typing import Dict
 from typing import List
 from typing import Union
+from wsgiref.simple_server import make_server
 
 import riprova
 
-from bitcoin.rpc import InWarmupError, Proxy
-from prometheus_client import start_http_server, Gauge, Counter
+from bitcoin.rpc import JSONRPCError, InWarmupError, Proxy
+from prometheus_client import make_wsgi_app, Gauge, Counter
 
 
 logger = logging.getLogger("bitcoin-exporter")
@@ -77,6 +78,8 @@ BITCOIN_LATEST_BLOCK_TXS = Gauge(
     "bitcoin_latest_block_txs", "Number of transactions in latest block"
 )
 
+BITCOIN_TXCOUNT = Gauge("bitcoin_txcount", "Number of TX since the genesis block")
+
 BITCOIN_NUM_CHAINTIPS = Gauge("bitcoin_num_chaintips", "Number of known blockchain branches")
 
 BITCOIN_TOTAL_BYTES_RECV = Gauge("bitcoin_total_bytes_recv", "Total bytes received")
@@ -90,6 +93,9 @@ BITCOIN_LATEST_BLOCK_OUTPUTS = Gauge(
 )
 BITCOIN_LATEST_BLOCK_VALUE = Gauge(
     "bitcoin_latest_block_value", "Bitcoin value of all transactions in the latest block"
+)
+BITCOIN_LATEST_BLOCK_FEE = Gauge(
+    "bitcoin_latest_block_fee", "Total fee to process the latest block"
 )
 
 BITCOIN_BAN_CREATED = Gauge(
@@ -108,6 +114,8 @@ BITCOIN_VERIFICATION_PROGRESS = Gauge(
     "bitcoin_verification_progress", "Estimate of verification progress [0..1]"
 )
 
+BITCOIN_RPC_ACTIVE = Gauge("bitcoin_rpc_active", "Number of RPC calls being processed")
+
 EXPORTER_ERRORS = Counter(
     "bitcoin_exporter_errors", "Number of errors encountered by the exporter", labelnames=["type"]
 )
@@ -115,6 +123,7 @@ PROCESS_TIME = Counter(
     "bitcoin_exporter_process_time", "Time spent processing metrics from bitcoin node"
 )
 
+SATS_PER_COIN = 1e8
 
 BITCOIN_RPC_SCHEME = os.environ.get("BITCOIN_RPC_SCHEME", "http")
 BITCOIN_RPC_HOST = os.environ.get("BITCOIN_RPC_HOST", "localhost")
@@ -126,9 +135,10 @@ HASHPS_BLOCKS = [int(b) for b in os.environ.get("HASHPS_BLOCKS", "-1,1,120").spl
 SMART_FEES = [int(f) for f in os.environ.get("SMARTFEE_BLOCKS", "2,3,5,20").split(",") if f != '']
 REFRESH_SECONDS = float(os.environ.get("REFRESH_SECONDS", "300"))
 METRICS_ADDR = os.environ.get("METRICS_ADDR", "")  # empty = any address
-METRICS_PORT = int(os.environ.get("METRICS_PORT", "8334"))
+METRICS_PORT = int(os.environ.get("METRICS_PORT", "9332"))
 RETRIES = int(os.environ.get("RETRIES", 5))
 TIMEOUT = int(os.environ.get("TIMEOUT", 30))
+RATE_LIMIT_SECONDS = int(os.environ.get("RATE_LIMIT", 5))
 LOG_LEVEL = os.environ.get("LOG_LEVEL", "INFO")
 
 
@@ -193,11 +203,16 @@ def bitcoinrpc(*args) -> RpcResult:
     return result
 
 
-def get_block(block_hash: str):
+@lru_cache(maxsize=1)
+def getblockstats(block_hash: str):
     try:
-        block = bitcoinrpc("getblock", block_hash, 2)
+        block = bitcoinrpc(
+            "getblockstats",
+            block_hash,
+            ["total_size", "total_weight", "totalfee", "txs", "height", "ins", "outs", "total_out"],
+        )
     except Exception:
-        logger.exception("Failed to retrieve block " + block_hash + " from bitcoind.")
+        logger.exception("Failed to retrieve block " + block_hash + " statistics from bitcoind.")
         return None
     return block
 
@@ -254,7 +269,10 @@ def refresh_metrics() -> None:
     chaintips = len(bitcoinrpc("getchaintips"))
     mempool = bitcoinrpc("getmempoolinfo")
     nettotals = bitcoinrpc("getnettotals")
-    latest_block = get_block(str(blockchaininfo["bestblockhash"]))
+    rpcinfo = bitcoinrpc("getrpcinfo")
+    txstats = bitcoinrpc("getchaintxstats")
+    latest_blockstats = getblockstats(str(blockchaininfo["bestblockhash"]))
+
     banned = bitcoinrpc("listbanned")
 
     BITCOIN_UPTIME.set(uptime)
@@ -288,6 +306,8 @@ def refresh_metrics() -> None:
     if networkinfo["warnings"]:
         BITCOIN_WARNINGS.inc()
 
+    BITCOIN_TXCOUNT.set(txstats["txcount"])
+
     BITCOIN_NUM_CHAINTIPS.set(chaintips)
 
     BITCOIN_MEMINFO_USED.set(meminfo["used"])
@@ -306,24 +326,19 @@ def refresh_metrics() -> None:
     BITCOIN_TOTAL_BYTES_RECV.set(nettotals["totalbytesrecv"])
     BITCOIN_TOTAL_BYTES_SENT.set(nettotals["totalbytessent"])
 
-    if latest_block is not None:
-        BITCOIN_LATEST_BLOCK_SIZE.set(latest_block["size"])
-        BITCOIN_LATEST_BLOCK_TXS.set(latest_block["nTx"])
-        BITCOIN_LATEST_BLOCK_HEIGHT.set(latest_block["height"])
-        if "weight" in latest_block:
-            BITCOIN_LATEST_BLOCK_WEIGHT.set(latest_block["weight"])
-        inputs, outputs = 0, 0
-        value = 0
-        for tx in latest_block["tx"]:
-            i = len(tx["vin"])
-            inputs += i
-            o = len(tx["vout"])
-            outputs += o
-            value += sum(o["value"] for o in tx["vout"])
+    if latest_blockstats is not None:
+        BITCOIN_LATEST_BLOCK_SIZE.set(latest_blockstats["total_size"])
+        BITCOIN_LATEST_BLOCK_TXS.set(latest_blockstats["txs"])
+        BITCOIN_LATEST_BLOCK_HEIGHT.set(latest_blockstats["height"])
+        if "total_weight" in latest_blockstats:
+            BITCOIN_LATEST_BLOCK_WEIGHT.set(latest_blockstats["total_weight"])
+        BITCOIN_LATEST_BLOCK_INPUTS.set(latest_blockstats["ins"])
+        BITCOIN_LATEST_BLOCK_OUTPUTS.set(latest_blockstats["outs"])
+        BITCOIN_LATEST_BLOCK_VALUE.set(latest_blockstats["total_out"] / SATS_PER_COIN)
+        BITCOIN_LATEST_BLOCK_FEE.set(latest_blockstats["totalfee"] / SATS_PER_COIN)
 
-        BITCOIN_LATEST_BLOCK_INPUTS.set(inputs)
-        BITCOIN_LATEST_BLOCK_OUTPUTS.set(outputs)
-        BITCOIN_LATEST_BLOCK_VALUE.set(value)
+    # Subtract one because we don't want to count the "getrpcinfo" call itself
+    BITCOIN_RPC_ACTIVE.set(len(rpcinfo["active_commands"]) - 1)
 
 
 def sigterm_handler(signal, frame) -> None:
@@ -348,10 +363,17 @@ def main():
     # Handle SIGTERM gracefully.
     signal.signal(signal.SIGTERM, sigterm_handler)
 
-    # Start up the server to expose the metrics.
-    start_http_server(addr=METRICS_ADDR, port=METRICS_PORT)
-    while True:
+    app = make_wsgi_app()
+
+    last_refresh = datetime.fromtimestamp(0)
+
+    def refresh_app(*args, **kwargs):
+        nonlocal last_refresh
         process_start = datetime.now()
+
+        # Only refresh every RATE_LIMIT_SECONDS seconds.
+        if (process_start - last_refresh).total_seconds() < RATE_LIMIT_SECONDS:
+            return app(*args, **kwargs)
 
         # Allow riprova.MaxRetriesExceeded and unknown exceptions to crash the process.
         try:
@@ -359,15 +381,22 @@ def main():
         except riprova.exceptions.RetryError as e:
             logger.error("Refresh failed during retry. Cause: " + str(e))
             exception_count(e)
+        except JSONRPCError as e:
+            logger.debug("Bitcoin RPC error refresh", exc_info=True)
+            exception_count(e)
         except json.decoder.JSONDecodeError as e:
             logger.error("RPC call did not return JSON. Bad credentials? " + str(e))
             sys.exit(1)
 
         duration = datetime.now() - process_start
         PROCESS_TIME.inc(duration.total_seconds())
-        logger.info("Refresh took %s seconds, sleeping for %s seconds", duration, REFRESH_SECONDS)
+        logger.info("Refresh took %s seconds", duration)
+        last_refresh = process_start
 
-        time.sleep(REFRESH_SECONDS)
+        return app(*args, **kwargs)
+
+    httpd = make_server(METRICS_ADDR, METRICS_PORT, refresh_app)
+    httpd.serve_forever()
 
 
 if __name__ == "__main__":

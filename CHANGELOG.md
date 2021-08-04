@@ -3,6 +3,25 @@ Changes to the project.
 
 ## [Unreleased]
 
+**BREAKING CHANGE: Default port number has changed!**
+
+### Added
+- Add `bitcoin_rpc_active` stat for number of active RPC calls.
+  - [Source](https://github.com/EchterAgo/bitcoin-prometheus-exporter/commit/cc2a804e214556414c7184830166242c34d42457)
+- Add `bitcoin_txcount` stat for total number of transactions since the genesis block.
+  - [Source 1](https://github.com/EchterAgo/bitcoin-prometheus-exporter/commit/b368138574641e4e26a8a2dfc8be6eede82f4a73)
+  - [Source 2](https://github.com/EchterAgo/bitcoin-prometheus-exporter/commit/a9a6b250f463906c1b1f9446d9a689c78c4add6d)
+
+### Changed
+- Default port changed from `8334` to `9332` to avoid conflicts with Bitcoin Tor port.
+- Update metrics on HTTP request, instead of timer ([#12][issue-12]).
+  - [Source 1](https://github.com/EchterAgo/bitcoin-prometheus-exporter/commit/c8382240b7a931503dfdd4c8cf89a8415326caf6)
+  - [Source 2](https://github.com/EchterAgo/bitcoin-prometheus-exporter/commit/89212072386307fcb6a9f062ee7f958a266b1075)
+- Improve performance of block statistics.
+  - [Source](https://github.com/EchterAgo/bitcoin-prometheus-exporter/commit/9c018bf081bfdc604af03d8dedd125197401b2de)
+
+[issue-12]: https://github.com/jvstein/bitcoin-prometheus-exporter/issues/12
+
 
 ## [0.6.0] - 2021-06-05
 
