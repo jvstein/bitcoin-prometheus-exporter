@@ -1,4 +1,4 @@
-VERSION ?= v0.6.0
+VERSION ?= v0.7.0
 REMOTE ?= origin
 DOCKER_REPO ?= jvstein/bitcoin-prometheus-exporter
 PLATFORMS ?= linux/386,linux/amd64,linux/arm/v6,linux/arm/v7,linux/arm64,linux/ppc64le,linux/s390x

@@ -3,7 +3,10 @@ Changes to the project.
 
 ## [Unreleased]
 
-**BREAKING CHANGE: Default port number has changed!**
+
+## [0.7.0] - 2022-01-14
+
+**BREAKING CHANGE: Default port number has changed to 9332! Use `METRICS_PORT=8334` to use old port.**
 
 ### Added
 - Add `bitcoin_rpc_active` stat for number of active RPC calls.
@@ -161,7 +164,8 @@ as-is in the first commit.
 
 [python-bitcoinlib]: https://github.com/petertodd/python-bitcoinlib
 
-[Unreleased]: https://github.com/jvstein/bitcoin-prometheus-exporter/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/jvstein/bitcoin-prometheus-exporter/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/jvstein/bitcoin-prometheus-exporter/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/jvstein/bitcoin-prometheus-exporter/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/jvstein/bitcoin-prometheus-exporter/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/jvstein/bitcoin-prometheus-exporter/compare/v0.3.0...v0.4.0
