@@ -8,7 +8,7 @@ RUN apk --no-cache add \
       binutils \
       libressl-dev \
       openssl-dev && \
-    python -c "import ctypes, ctypes.util; ctypes.cdll.LoadLibrary(ctypes.util.find_library('ssl') or 'libeay32')"
+    python -c "import ctypes, ctypes.util; ctypes.cdll.LoadLibrary('/usr/lib/libssl.so')"
 
 RUN pip install --no-cache-dir \
         prometheus_client \
