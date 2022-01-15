@@ -41,3 +41,6 @@ If you see a lot of `ConnectionRefusedError` errors, run `chmod og+r test-bitcoi
 
 # [Change Log](CHANGELOG.md)
 See the [`CHANGELOG.md`](CHANGELOG.md) file for changes.
+
+# Other Exporters
+ - [Rust port](https://github.com/eburghar/bitcoin-exporter)
