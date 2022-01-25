@@ -3,6 +3,11 @@ Changes to the project.
 
 ## [Unreleased]
 
+### Changed
+- Update docker base image to be fully qualifed for better podman support ([#25][pr-25])
+
+[pr-25]: https://github.com/jvstein/bitcoin-prometheus-exporter/pull/25
+
 
 ## [0.7.0] - 2022-01-14
 

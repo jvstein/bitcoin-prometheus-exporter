@@ -1,4 +1,4 @@
-FROM python:3.8-alpine3.15
+FROM docker.io/library/python:3.8-alpine3.15
 
 LABEL org.opencontainers.image.title "bitcoin-prometheus-exporter"
 LABEL org.opencontainers.image.description "Prometheus exporter for bitcoin nodes"
