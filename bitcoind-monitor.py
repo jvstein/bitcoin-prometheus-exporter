@@ -28,6 +28,8 @@ from typing import Any
 from typing import Dict
 from typing import List
 from typing import Union
+from typing import Callable
+from distutils.util import strtobool
 from wsgiref.simple_server import make_server
 
 import riprova
@@ -140,6 +142,18 @@ TIMEOUT = int(os.environ.get("TIMEOUT", 30))
 RATE_LIMIT_SECONDS = int(os.environ.get("RATE_LIMIT", 5))
 LOG_LEVEL = os.environ.get("LOG_LEVEL", "INFO")
 
+FETCH_UPTIME = strtobool(os.environ.get("FETCH_UPTIME", 'True'))
+FETCH_MEMINFO = strtobool(os.environ.get("FETCH_MEMINFO", 'True'))
+FETCH_BLOCKCHAININFO = strtobool(os.environ.get("FETCH_BLOCKCHAININFO", 'True'))
+FETCH_NETWORKINFO = strtobool(os.environ.get("FETCH_NETWORKINFO", 'True'))
+FETCH_CHAINTIPS = strtobool(os.environ.get("FETCH_CHAINTIPS", 'True'))
+FETCH_MEMPOOLINFO = strtobool(os.environ.get("FETCH_MEMPOOLINFO", 'True'))
+FETCH_NETTOTALS = strtobool(os.environ.get("FETCH_NETTOTALS", 'True'))
+FETCH_RPCINFO = strtobool(os.environ.get("FETCH_RPCINFO", 'True'))
+FETCH_TXSTATS = strtobool(os.environ.get("FETCH_TXSTATS", 'True'))
+FETCH_BANNED = strtobool(os.environ.get("FETCH_BANNED", 'True'))
+FETCH_SMART_FEES = strtobool(os.environ.get("FETCH_SMART_FEES", 'True'))
+FETCH_HASHP_BLOCKS = strtobool(os.environ.get("FETCH_HASHP_BLOCKS", 'True'))
 
 RETRY_EXCEPTIONS = (InWarmupError, ConnectionError, socket.timeout)
 
@@ -288,7 +302,7 @@ def fetch_meminfo() -> None:
         BITCOIN_MEMINFO_CHUNKS_USED.set(meminfo["chunks_used"])
         BITCOIN_MEMINFO_CHUNKS_FREE.set(meminfo["chunks_free"])
 
-def fetch_blockchaininfo():
+def fetch_blockchaininfo() -> None:
     blockchaininfo = bitcoinrpc("getblockchaininfo")
     if blockchaininfo is not None:
         BITCOIN_BLOCKS.set(blockchaininfo["blocks"])
@@ -296,20 +310,16 @@ def fetch_blockchaininfo():
         BITCOIN_SIZE_ON_DISK.set(blockchaininfo["size_on_disk"])
         BITCOIN_VERIFICATION_PROGRESS.set(blockchaininfo["verificationprogress"])
 
-        return blockchaininfo
-
-def fetch_latest_blockstats(blockchaininfo) -> None:
-    latest_blockstats = getblockstats(str(blockchaininfo["bestblockhash"]))
-    if latest_blockstats is not None:
-        BITCOIN_LATEST_BLOCK_SIZE.set(latest_blockstats["total_size"])
-        BITCOIN_LATEST_BLOCK_TXS.set(latest_blockstats["txs"])
-        BITCOIN_LATEST_BLOCK_HEIGHT.set(latest_blockstats["height"])
-        BITCOIN_LATEST_BLOCK_WEIGHT.set(latest_blockstats["total_weight"])
-        BITCOIN_LATEST_BLOCK_INPUTS.set(latest_blockstats["ins"])
-        BITCOIN_LATEST_BLOCK_OUTPUTS.set(latest_blockstats["outs"])
-        BITCOIN_LATEST_BLOCK_VALUE.set(latest_blockstats["total_out"] / SATS_PER_COIN)
-        BITCOIN_LATEST_BLOCK_FEE.set(latest_blockstats["totalfee"] / SATS_PER_COIN)
-
+        latest_blockstats = getblockstats(str(blockchaininfo["bestblockhash"]))
+        if latest_blockstats is not None:
+            BITCOIN_LATEST_BLOCK_SIZE.set(latest_blockstats["total_size"])
+            BITCOIN_LATEST_BLOCK_TXS.set(latest_blockstats["txs"])
+            BITCOIN_LATEST_BLOCK_HEIGHT.set(latest_blockstats["height"])
+            BITCOIN_LATEST_BLOCK_WEIGHT.set(latest_blockstats["total_weight"])
+            BITCOIN_LATEST_BLOCK_INPUTS.set(latest_blockstats["ins"])
+            BITCOIN_LATEST_BLOCK_OUTPUTS.set(latest_blockstats["outs"])
+            BITCOIN_LATEST_BLOCK_VALUE.set(latest_blockstats["total_out"] / SATS_PER_COIN)
+            BITCOIN_LATEST_BLOCK_FEE.set(latest_blockstats["totalfee"] / SATS_PER_COIN)
 
 def fetch_networkinfo() -> None:
     networkinfo = bitcoinrpc("getnetworkinfo")
@@ -377,6 +387,50 @@ def fetch_hashp_blocks() -> None:
     for hashps_block in HASHPS_BLOCKS:
         do_hashps_gauge(hashps_block)
 
+def build_functions_dict() -> Dict[str, Callable[[], None]]:
+    functions_dict = {}
+    if FETCH_UPTIME:
+        functions_dict['uptime'] = fetch_uptime
+    if FETCH_MEMINFO:
+        functions_dict['meminfo'] = fetch_meminfo
+    if FETCH_BLOCKCHAININFO:
+        functions_dict['blockchaininfo'] = fetch_blockchaininfo
+    if FETCH_NETWORKINFO:
+        functions_dict['networkinfo'] = fetch_networkinfo
+    if FETCH_CHAINTIPS:
+        functions_dict['chaintips'] = fetch_chaintips
+    if FETCH_MEMPOOLINFO:
+        functions_dict['mempoolinfo'] = fetch_mempoolinfo
+    if FETCH_NETTOTALS:
+        functions_dict['nettotals'] = fetch_nettotals
+    if FETCH_RPCINFO:
+        functions_dict['rpcinfo'] = fetch_rpcinfo
+    if FETCH_TXSTATS:
+        functions_dict['txstats'] = fetch_txstats
+    if FETCH_BANNED:
+        functions_dict['banned'] = fetch_banned
+    if FETCH_SMART_FEES:
+        functions_dict['smart_fees'] = fetch_smart_fees
+    if FETCH_HASHP_BLOCKS:
+        functions_dict['hashp_blocks'] = fetch_hashp_blocks
+
+    return functions_dict
+
+def fetch(fetch_function):
+    # Allow riprova.MaxRetriesExceeded and unknown exceptions to crash the process.
+    try:
+        logger.info("Fetching metric...")
+        fetch_function()
+    except riprova.exceptions.RetryError as e:
+        logger.error("Fetch failed during retry. Cause: " + str(e))
+        exception_count(e)
+    except JSONRPCError as e:
+        logger.debug("Bitcoin RPC error refresh", exc_info=True)
+        exception_count(e)
+    except json.decoder.JSONDecodeError as e:
+        logger.error("RPC call did not return JSON. Bad credentials? " + str(e))
+        sys.exit(1)
+
 def main():
     # Set up logging to look similar to bitcoin logs (UTC).
     logging.basicConfig(
@@ -392,6 +446,9 @@ def main():
 
     last_refresh = datetime.fromtimestamp(0)
 
+    functions_dict = build_functions_dict()
+    logger.info("The following data will be fetched: %s", ', '.join([k for k in functions_dict.keys()]))
+
     def refresh_app(*args, **kwargs):
         nonlocal last_refresh
         process_start = datetime.now()
@@ -400,33 +457,8 @@ def main():
         if (process_start - last_refresh).total_seconds() < RATE_LIMIT_SECONDS:
             return app(*args, **kwargs)
 
-        # Allow riprova.MaxRetriesExceeded and unknown exceptions to crash the process.
-        try:
-            logger.info("Fetching metrics")
-            fetch_uptime()
-            fetch_meminfo()
-
-            blockchaininfo = fetch_blockchaininfo()
-            fetch_latest_blockstats(blockchaininfo)
-
-            fetch_networkinfo()
-            fetch_chaintips()
-            fetch_mempoolinfo()
-            fetch_nettotals()
-            fetch_rpcinfo()
-            fetch_txstats()
-            fetch_banned()
-            fetch_smart_fees()
-            fetch_hashp_blocks()
-        except riprova.exceptions.RetryError as e:
-            logger.error("Fetch failed during retry. Cause: " + str(e))
-            exception_count(e)
-        except JSONRPCError as e:
-            logger.debug("Bitcoin RPC error refresh", exc_info=True)
-            exception_count(e)
-        except json.decoder.JSONDecodeError as e:
-            logger.error("RPC call did not return JSON. Bad credentials? " + str(e))
-            sys.exit(1)
+        for func_name, func in functions_dict.items():
+            fetch(func)
 
         duration = datetime.now() - process_start
         PROCESS_TIME.inc(duration.total_seconds())
