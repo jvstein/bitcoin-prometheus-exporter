@@ -263,71 +263,43 @@ def do_hashps_gauge(num_blocks: int) -> None:
         gauge.set(hps)
 
 
-def refresh_metrics() -> None:
-    uptime = int(bitcoinrpc("uptime"))
+def sigterm_handler(signal, frame) -> None:
+    logger.critical("Received SIGTERM. Exiting.")
+    sys.exit(0)
+
+def exception_count(e: Exception) -> None:
+    err_type = type(e)
+    exception_name = err_type.__module__ + "." + err_type.__name__
+    EXPORTER_ERRORS.labels(**{"type": exception_name}).inc()
+
+
+def fetch_uptime() -> None:
+    uptime = bitcoinrpc("uptime")
+    if uptime is not None:
+        BITCOIN_UPTIME.set(uptime)
+
+def fetch_meminfo() -> None:
     meminfo = bitcoinrpc("getmemoryinfo", "stats")["locked"]
+    if meminfo is not None:
+        BITCOIN_MEMINFO_USED.set(meminfo["used"])
+        BITCOIN_MEMINFO_FREE.set(meminfo["free"])
+        BITCOIN_MEMINFO_TOTAL.set(meminfo["total"])
+        BITCOIN_MEMINFO_LOCKED.set(meminfo["locked"])
+        BITCOIN_MEMINFO_CHUNKS_USED.set(meminfo["chunks_used"])
+        BITCOIN_MEMINFO_CHUNKS_FREE.set(meminfo["chunks_free"])
+
+def fetch_blockchaininfo():
     blockchaininfo = bitcoinrpc("getblockchaininfo")
-    networkinfo = bitcoinrpc("getnetworkinfo")
-    chaintips = len(bitcoinrpc("getchaintips"))
-    mempool = bitcoinrpc("getmempoolinfo")
-    nettotals = bitcoinrpc("getnettotals")
-    rpcinfo = bitcoinrpc("getrpcinfo")
-    txstats = bitcoinrpc("getchaintxstats")
+    if blockchaininfo is not None:
+        BITCOIN_BLOCKS.set(blockchaininfo["blocks"])
+        BITCOIN_DIFFICULTY.set(blockchaininfo["difficulty"])
+        BITCOIN_SIZE_ON_DISK.set(blockchaininfo["size_on_disk"])
+        BITCOIN_VERIFICATION_PROGRESS.set(blockchaininfo["verificationprogress"])
+
+        return blockchaininfo
+
+def fetch_latest_blockstats(blockchaininfo) -> None:
     latest_blockstats = getblockstats(str(blockchaininfo["bestblockhash"]))
-
-    banned = bitcoinrpc("listbanned")
-
-    BITCOIN_UPTIME.set(uptime)
-    BITCOIN_BLOCKS.set(blockchaininfo["blocks"])
-    BITCOIN_PEERS.set(networkinfo["connections"])
-    if "connections_in" in networkinfo:
-        BITCOIN_CONN_IN.set(networkinfo["connections_in"])
-    if "connections_out" in networkinfo:
-        BITCOIN_CONN_OUT.set(networkinfo["connections_out"])
-    BITCOIN_DIFFICULTY.set(blockchaininfo["difficulty"])
-
-    BITCOIN_SERVER_VERSION.set(networkinfo["version"])
-    BITCOIN_PROTOCOL_VERSION.set(networkinfo["protocolversion"])
-    BITCOIN_SIZE_ON_DISK.set(blockchaininfo["size_on_disk"])
-    BITCOIN_VERIFICATION_PROGRESS.set(blockchaininfo["verificationprogress"])
-
-    for smartfee in SMART_FEES:
-        do_smartfee(smartfee)
-
-    for hashps_block in HASHPS_BLOCKS:
-        do_hashps_gauge(hashps_block)
-
-    for ban in banned:
-        BITCOIN_BAN_CREATED.labels(
-            address=ban["address"], reason=ban.get("ban_reason", "manually added")
-        ).set(ban["ban_created"])
-        BITCOIN_BANNED_UNTIL.labels(
-            address=ban["address"], reason=ban.get("ban_reason", "manually added")
-        ).set(ban["banned_until"])
-
-    if networkinfo["warnings"]:
-        BITCOIN_WARNINGS.inc()
-
-    BITCOIN_TXCOUNT.set(txstats["txcount"])
-
-    BITCOIN_NUM_CHAINTIPS.set(chaintips)
-
-    BITCOIN_MEMINFO_USED.set(meminfo["used"])
-    BITCOIN_MEMINFO_FREE.set(meminfo["free"])
-    BITCOIN_MEMINFO_TOTAL.set(meminfo["total"])
-    BITCOIN_MEMINFO_LOCKED.set(meminfo["locked"])
-    BITCOIN_MEMINFO_CHUNKS_USED.set(meminfo["chunks_used"])
-    BITCOIN_MEMINFO_CHUNKS_FREE.set(meminfo["chunks_free"])
-
-    BITCOIN_MEMPOOL_BYTES.set(mempool["bytes"])
-    BITCOIN_MEMPOOL_SIZE.set(mempool["size"])
-    BITCOIN_MEMPOOL_USAGE.set(mempool["usage"])
-    if "unbroadcastcount" in mempool:
-        BITCOIN_MEMPOOL_UNBROADCAST.set(mempool["unbroadcastcount"])
-
-    BITCOIN_TOTAL_BYTES_RECV.set(nettotals["totalbytesrecv"])
-    BITCOIN_TOTAL_BYTES_SENT.set(nettotals["totalbytessent"])
-
     if latest_blockstats is not None:
         BITCOIN_LATEST_BLOCK_SIZE.set(latest_blockstats["total_size"])
         BITCOIN_LATEST_BLOCK_TXS.set(latest_blockstats["txs"])
@@ -338,20 +310,72 @@ def refresh_metrics() -> None:
         BITCOIN_LATEST_BLOCK_VALUE.set(latest_blockstats["total_out"] / SATS_PER_COIN)
         BITCOIN_LATEST_BLOCK_FEE.set(latest_blockstats["totalfee"] / SATS_PER_COIN)
 
-    # Subtract one because we don't want to count the "getrpcinfo" call itself
-    BITCOIN_RPC_ACTIVE.set(len(rpcinfo["active_commands"]) - 1)
+
+def fetch_networkinfo() -> None:
+    networkinfo = bitcoinrpc("getnetworkinfo")
+    if networkinfo is not None:
+        BITCOIN_PEERS.set(networkinfo["connections"])
+        if "connections_in" in networkinfo:
+            BITCOIN_CONN_IN.set(networkinfo["connections_in"])
+        if "connections_out" in networkinfo:
+            BITCOIN_CONN_OUT.set(networkinfo["connections_out"])
+
+        BITCOIN_SERVER_VERSION.set(networkinfo["version"])
+        BITCOIN_PROTOCOL_VERSION.set(networkinfo["protocolversion"])
+
+        if networkinfo["warnings"]:
+            BITCOIN_WARNINGS.inc()
+
+def fetch_chaintips() -> None:
+    chaintips = bitcoinrpc("getchaintips")
+    if chaintips is not None:
+        BITCOIN_NUM_CHAINTIPS.set(len(chaintips))
+
+def fetch_mempoolinfo() -> None:
+    mempool = bitcoinrpc("getmempoolinfo")
+    if mempool is not None:
+        BITCOIN_MEMPOOL_BYTES.set(mempool["bytes"])
+        BITCOIN_MEMPOOL_SIZE.set(mempool["size"])
+        BITCOIN_MEMPOOL_USAGE.set(mempool["usage"])
+        if "unbroadcastcount" in mempool:
+            BITCOIN_MEMPOOL_UNBROADCAST.set(mempool["unbroadcastcount"])
+
+def fetch_nettotals() -> None:
+    nettotals = bitcoinrpc("getnettotals")
+    if nettotals is not None:
+        BITCOIN_TOTAL_BYTES_RECV.set(nettotals["totalbytesrecv"])
+        BITCOIN_TOTAL_BYTES_SENT.set(nettotals["totalbytessent"])
+
+def fetch_rpcinfo() -> None:
+    rpcinfo = bitcoinrpc("getrpcinfo")
+    if rpcinfo is not None:
+        # Subtract one because we don't want to count the "getrpcinfo" call itself
+        BITCOIN_RPC_ACTIVE.set(len(rpcinfo["active_commands"]) - 1)
+
+def fetch_txstats() -> None:
+    txstats = bitcoinrpc("getchaintxstats")
+    if txstats is not None:
+        BITCOIN_TXCOUNT.set(txstats["txcount"])
+
+def fetch_banned() -> None:
+    banned = bitcoinrpc("listbanned")
+    if banned is not None:
+        for ban in banned:
+            BITCOIN_BAN_CREATED.labels(
+                address=ban["address"], reason=ban.get("ban_reason", "manually added")
+            ).set(ban["ban_created"])
+            BITCOIN_BANNED_UNTIL.labels(
+                address=ban["address"], reason=ban.get("ban_reason", "manually added")
+            ).set(ban["banned_until"])
 
 
-def sigterm_handler(signal, frame) -> None:
-    logger.critical("Received SIGTERM. Exiting.")
-    sys.exit(0)
+def fetch_smart_fees() -> None:
+    for smartfee in SMART_FEES:
+        do_smartfee(smartfee)
 
-
-def exception_count(e: Exception) -> None:
-    err_type = type(e)
-    exception_name = err_type.__module__ + "." + err_type.__name__
-    EXPORTER_ERRORS.labels(**{"type": exception_name}).inc()
-
+def fetch_hashp_blocks() -> None:
+    for hashps_block in HASHPS_BLOCKS:
+        do_hashps_gauge(hashps_block)
 
 def main():
     # Set up logging to look similar to bitcoin logs (UTC).
@@ -378,9 +402,24 @@ def main():
 
         # Allow riprova.MaxRetriesExceeded and unknown exceptions to crash the process.
         try:
-            refresh_metrics()
+            logger.info("Fetching metrics")
+            fetch_uptime()
+            fetch_meminfo()
+
+            blockchaininfo = fetch_blockchaininfo()
+            fetch_latest_blockstats(blockchaininfo)
+
+            fetch_networkinfo()
+            fetch_chaintips()
+            fetch_mempoolinfo()
+            fetch_nettotals()
+            fetch_rpcinfo()
+            fetch_txstats()
+            fetch_banned()
+            fetch_smart_fees()
+            fetch_hashp_blocks()
         except riprova.exceptions.RetryError as e:
-            logger.error("Refresh failed during retry. Cause: " + str(e))
+            logger.error("Fetch failed during retry. Cause: " + str(e))
             exception_count(e)
         except JSONRPCError as e:
             logger.debug("Bitcoin RPC error refresh", exc_info=True)
@@ -391,14 +430,13 @@ def main():
 
         duration = datetime.now() - process_start
         PROCESS_TIME.inc(duration.total_seconds())
-        logger.info("Refresh took %s seconds", duration)
+        logger.info("Fetch took %s seconds", duration)
         last_refresh = process_start
 
         return app(*args, **kwargs)
 
     httpd = make_server(METRICS_ADDR, METRICS_PORT, refresh_app)
     httpd.serve_forever()
-
 
 if __name__ == "__main__":
     main()
