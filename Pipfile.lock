@@ -1,0 +1,50 @@
+{
+    "_meta": {
+        "hash": {
+            "sha256": "32578dc366bb72701b0978261acc31705c0371b39fb60bef131d4b8a2f64698f"
+        },
+        "pipfile-spec": 6,
+        "requires": {},
+        "sources": [
+            {
+                "name": "pypi",
+                "url": "https://pypi.org/simple",
+                "verify_ssl": true
+            }
+        ]
+    },
+    "default": {
+        "prometheus-client": {
+            "hashes": [
+                "sha256:be26aa452490cfcf6da953f9436e95a9f2b4d578ca80094b4458930e5f584ab1",
+                "sha256:db7c05cbd13a0f79975592d112320f2605a325969b270a94b71dcabc47b931d2"
+            ],
+            "index": "pypi",
+            "version": "==0.15.0"
+        },
+        "python-bitcoinlib": {
+            "hashes": [
+                "sha256:61ba514e0d232cc84741e49862dcedaf37199b40bba252a17edc654f63d13f39",
+                "sha256:78bd4ee717fe805cd760dfdd08765e77b7c7dbef4627f8596285e84953756508"
+            ],
+            "index": "pypi",
+            "version": "==0.11.2"
+        },
+        "riprova": {
+            "hashes": [
+                "sha256:b960451d48d3b6b5fc9909979d850ae172fc14037e9e13da0694ccc3e29c02ef",
+                "sha256:bf81471e51d92e3f7130839bea26ee5629f1aafa656db1350367c025e56eb911"
+            ],
+            "index": "pypi",
+            "version": "==0.2.7"
+        },
+        "six": {
+            "hashes": [
+                "sha256:1e61c37477a1626458e36f7b1d82aa5c9b094fa4802892072e49de9c60c4c926",
+                "sha256:8abb2f1d86890a2dfb989f9a77cfcfd3e47c2a354b01111771326f8aa26e0254"
+            ],
+            "version": "==1.16.0"
+        }
+    },
+    "develop": {}
+}
