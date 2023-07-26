@@ -33,94 +33,109 @@ from wsgiref.simple_server import make_server
 import riprova
 
 from bitcoin.rpc import JSONRPCError, InWarmupError, Proxy
-from prometheus_client import make_wsgi_app, Gauge, Counter
+from prometheus_client import make_wsgi_app, Gauge, Counter, Info
 
 
 logger = logging.getLogger("bitcoin-exporter")
 
+# This is a constant we'll use for labeling
+fetched_blockchain = ""
+
 # Create Prometheus metrics to track bitcoind stats.
-BITCOIN_BLOCKS = Gauge("bitcoin_blocks", "Block height")
-BITCOIN_DIFFICULTY = Gauge("bitcoin_difficulty", "Difficulty")
-BITCOIN_PEERS = Gauge("bitcoin_peers", "Number of peers")
-BITCOIN_CONN_IN = Gauge("bitcoin_conn_in", "Number of connections in")
-BITCOIN_CONN_OUT = Gauge("bitcoin_conn_out", "Number of connections out")
+BITCOIN_BLOCKS = Gauge("bitcoin_blocks", "Block height", ["chain"])
+BITCOIN_CHAIN = Info("bitcoin_chain", "Mainnet/Testnet/Signet")
+BITCOIN_DIFFICULTY = Gauge("bitcoin_difficulty", "Difficulty", ["chain"])
+BITCOIN_PEERS = Gauge("bitcoin_peers", "Number of peers", ["chain"])
+BITCOIN_CONN_IN = Gauge("bitcoin_conn_in", "Number of connections in", ["chain"])
+BITCOIN_CONN_OUT = Gauge("bitcoin_conn_out", "Number of connections out", ["chain"])
 
 BITCOIN_HASHPS_GAUGES = {}  # type: Dict[int, Gauge]
 BITCOIN_ESTIMATED_SMART_FEE_GAUGES = {}  # type: Dict[int, Gauge]
 
-BITCOIN_WARNINGS = Counter("bitcoin_warnings", "Number of network or blockchain warnings detected")
-BITCOIN_UPTIME = Gauge("bitcoin_uptime", "Number of seconds the Bitcoin daemon has been running")
+BITCOIN_WARNINGS = Counter("bitcoin_warnings", "Number of network or blockchain warnings detected", ["chain"])
+BITCOIN_UPTIME = Gauge("bitcoin_uptime", "Number of seconds the Bitcoin daemon has been running", ["chain"])
 
-BITCOIN_MEMINFO_USED = Gauge("bitcoin_meminfo_used", "Number of bytes used")
-BITCOIN_MEMINFO_FREE = Gauge("bitcoin_meminfo_free", "Number of bytes available")
-BITCOIN_MEMINFO_TOTAL = Gauge("bitcoin_meminfo_total", "Number of bytes managed")
-BITCOIN_MEMINFO_LOCKED = Gauge("bitcoin_meminfo_locked", "Number of bytes locked")
-BITCOIN_MEMINFO_CHUNKS_USED = Gauge("bitcoin_meminfo_chunks_used", "Number of allocated chunks")
-BITCOIN_MEMINFO_CHUNKS_FREE = Gauge("bitcoin_meminfo_chunks_free", "Number of unused chunks")
+BITCOIN_MEMINFO_USED = Gauge("bitcoin_meminfo_used", "Number of bytes used", ["chain"])
+BITCOIN_MEMINFO_FREE = Gauge("bitcoin_meminfo_free", "Number of bytes available", ["chain"])
+BITCOIN_MEMINFO_TOTAL = Gauge("bitcoin_meminfo_total", "Number of bytes managed", ["chain"])
+BITCOIN_MEMINFO_LOCKED = Gauge("bitcoin_meminfo_locked", "Number of bytes locked", ["chain"])
+BITCOIN_MEMINFO_CHUNKS_USED = Gauge("bitcoin_meminfo_chunks_used", "Number of allocated chunks", ["chain"])
+BITCOIN_MEMINFO_CHUNKS_FREE = Gauge("bitcoin_meminfo_chunks_free", "Number of unused chunks", ["chain"])
 
-BITCOIN_MEMPOOL_BYTES = Gauge("bitcoin_mempool_bytes", "Size of mempool in bytes")
+BITCOIN_MEMPOOL_BYTES = Gauge("bitcoin_mempool_bytes", "Size of mempool in bytes", ["chain"])
 BITCOIN_MEMPOOL_SIZE = Gauge(
-    "bitcoin_mempool_size", "Number of unconfirmed transactions in mempool"
+    "bitcoin_mempool_size", "Number of unconfirmed transactions in mempool", ["chain"]
 )
-BITCOIN_MEMPOOL_USAGE = Gauge("bitcoin_mempool_usage", "Total memory usage for the mempool")
+BITCOIN_MEMPOOL_USAGE = Gauge("bitcoin_mempool_usage", "Total memory usage for the mempool", ["chain"])
 BITCOIN_MEMPOOL_UNBROADCAST = Gauge(
-    "bitcoin_mempool_unbroadcast", "Number of transactions waiting for acknowledgment"
+    "bitcoin_mempool_unbroadcast", "Number of transactions waiting for acknowledgment",
+    ["chain"]
 )
 
 BITCOIN_LATEST_BLOCK_HEIGHT = Gauge(
-    "bitcoin_latest_block_height", "Height or index of latest block"
+    "bitcoin_latest_block_height", "Height or index of latest block",
+    ["chain"]
 )
 BITCOIN_LATEST_BLOCK_WEIGHT = Gauge(
-    "bitcoin_latest_block_weight", "Weight of latest block according to BIP 141"
+    "bitcoin_latest_block_weight", "Weight of latest block according to BIP 141",
+    ["chain"]
 )
-BITCOIN_LATEST_BLOCK_SIZE = Gauge("bitcoin_latest_block_size", "Size of latest block in bytes")
+BITCOIN_LATEST_BLOCK_SIZE = Gauge("bitcoin_latest_block_size", "Size of latest block in bytes", ["chain"])
 BITCOIN_LATEST_BLOCK_TXS = Gauge(
-    "bitcoin_latest_block_txs", "Number of transactions in latest block"
+    "bitcoin_latest_block_txs", "Number of transactions in latest block",
+    ["chain"]
 )
 
-BITCOIN_TXCOUNT = Gauge("bitcoin_txcount", "Number of TX since the genesis block")
+BITCOIN_TXCOUNT = Gauge("bitcoin_txcount", "Number of TX since the genesis block", ["chain"])
 
-BITCOIN_NUM_CHAINTIPS = Gauge("bitcoin_num_chaintips", "Number of known blockchain branches")
+BITCOIN_NUM_chain_TIPS = Gauge("bitcoin_num_chaintips", "Number of known blockchain branches", ["chain"])
 
-BITCOIN_TOTAL_BYTES_RECV = Gauge("bitcoin_total_bytes_recv", "Total bytes received")
-BITCOIN_TOTAL_BYTES_SENT = Gauge("bitcoin_total_bytes_sent", "Total bytes sent")
+BITCOIN_TOTAL_BYTES_RECV = Gauge("bitcoin_total_bytes_recv", "Total bytes received", ["chain"])
+BITCOIN_TOTAL_BYTES_SENT = Gauge("bitcoin_total_bytes_sent", "Total bytes sent", ["chain"])
 
 BITCOIN_LATEST_BLOCK_INPUTS = Gauge(
-    "bitcoin_latest_block_inputs", "Number of inputs in transactions of latest block"
+    "bitcoin_latest_block_inputs", "Number of inputs in transactions of latest block",
+    ["chain"]
 )
 BITCOIN_LATEST_BLOCK_OUTPUTS = Gauge(
-    "bitcoin_latest_block_outputs", "Number of outputs in transactions of latest block"
+    "bitcoin_latest_block_outputs", "Number of outputs in transactions of latest block",
+    ["chain"]
 )
 BITCOIN_LATEST_BLOCK_VALUE = Gauge(
-    "bitcoin_latest_block_value", "Bitcoin value of all transactions in the latest block"
+    "bitcoin_latest_block_value", "Bitcoin value of all transactions in the latest block",
+    ["chain"]
 )
 BITCOIN_LATEST_BLOCK_FEE = Gauge(
-    "bitcoin_latest_block_fee", "Total fee to process the latest block"
+    "bitcoin_latest_block_fee", "Total fee to process the latest block",
+    ["chain"]
 )
 
 BITCOIN_BAN_CREATED = Gauge(
-    "bitcoin_ban_created", "Time the ban was created", labelnames=["address", "reason"]
+    "bitcoin_ban_created", "Time the ban was created", labelnames=["chain", "address", "reason"],
 )
 BITCOIN_BANNED_UNTIL = Gauge(
-    "bitcoin_banned_until", "Time the ban expires", labelnames=["address", "reason"]
+    "bitcoin_banned_until", "Time the ban expires", labelnames=["chain", "address", "reason"],
 )
 
-BITCOIN_SERVER_VERSION = Gauge("bitcoin_server_version", "The server version")
-BITCOIN_PROTOCOL_VERSION = Gauge("bitcoin_protocol_version", "The protocol version of the server")
+BITCOIN_SERVER_VERSION = Gauge("bitcoin_server_version", "The server version", ["chain"])
+BITCOIN_PROTOCOL_VERSION = Gauge("bitcoin_protocol_version", "The protocol version of the server", ["chain"])
 
-BITCOIN_SIZE_ON_DISK = Gauge("bitcoin_size_on_disk", "Estimated size of the block and undo files")
+BITCOIN_SIZE_ON_DISK = Gauge("bitcoin_size_on_disk", "Estimated size of the block and undo files", ["chain"])
 
 BITCOIN_VERIFICATION_PROGRESS = Gauge(
-    "bitcoin_verification_progress", "Estimate of verification progress [0..1]"
+    "bitcoin_verification_progress", "Estimate of verification progress [0..1]",
+    ["chain"]
 )
 
-BITCOIN_RPC_ACTIVE = Gauge("bitcoin_rpc_active", "Number of RPC calls being processed")
+BITCOIN_RPC_ACTIVE = Gauge("bitcoin_rpc_active", "Number of RPC calls being processed", ["chain"])
 
 EXPORTER_ERRORS = Counter(
-    "bitcoin_exporter_errors", "Number of errors encountered by the exporter", labelnames=["type"]
+    "bitcoin_exporter_errors", "Number of errors encountered by the exporter", 
+    labelnames=["chain", "type"]
 )
 PROCESS_TIME = Counter(
-    "bitcoin_exporter_process_time", "Time spent processing metrics from bitcoin node"
+    "bitcoin_exporter_process_time", "Time spent processing metrics from bitcoin node", 
+    labelnames=["chain"]
 )
 
 SATS_PER_COIN = Decimal(1e8)
@@ -221,7 +236,7 @@ def smartfee_gauge(num_blocks: int) -> Gauge:
     if gauge is None:
         gauge = Gauge(
             "bitcoin_est_smart_fee_%d" % num_blocks,
-            "Estimated smart fee per kilobyte for confirmation in %d blocks" % num_blocks,
+            "Estima]ted smart fee per kilobyte for confirmation in %d blocks" % num_blocks, ["chain"]
         )
         BITCOIN_ESTIMATED_SMART_FEE_GAUGES[num_blocks] = gauge
     return gauge
@@ -231,7 +246,7 @@ def do_smartfee(num_blocks: int) -> None:
     smartfee = bitcoinrpc("estimatesmartfee", num_blocks).get("feerate")
     if smartfee is not None:
         gauge = smartfee_gauge(num_blocks)
-        gauge.set(smartfee)
+        gauge.labels(fetched_blockchain).set(smartfee)
 
 
 def hashps_gauge_suffix(nblocks):
@@ -251,6 +266,7 @@ def hashps_gauge(num_blocks: int) -> Gauge:
         gauge = Gauge(
             "bitcoin_hashps%s" % hashps_gauge_suffix(num_blocks),
             "Estimated network hash rate per second %s" % desc_end,
+            ["chain"]
         )
         BITCOIN_HASHPS_GAUGES[num_blocks] = gauge
     return gauge
@@ -260,8 +276,18 @@ def do_hashps_gauge(num_blocks: int) -> None:
     hps = float(bitcoinrpc("getnetworkhashps", num_blocks))
     if hps is not None:
         gauge = hashps_gauge(num_blocks)
-        gauge.set(hps)
+        gauge.labels(fetched_blockchain).set(hps)
 
+def detect_chain() -> bool:
+    global fetched_blockchain
+    try:
+        blockchaininfo = bitcoinrpc("getblockchaininfo")
+        BITCOIN_CHAIN.info({"chain": blockchaininfo["chain"]})
+        fetched_blockchain = blockchaininfo["chain"]
+        return True
+    except:
+        logger.exception("Failed to label metrics")
+        return False
 
 def refresh_metrics() -> None:
     uptime = int(bitcoinrpc("uptime"))
@@ -277,19 +303,20 @@ def refresh_metrics() -> None:
 
     banned = bitcoinrpc("listbanned")
 
-    BITCOIN_UPTIME.set(uptime)
-    BITCOIN_BLOCKS.set(blockchaininfo["blocks"])
-    BITCOIN_PEERS.set(networkinfo["connections"])
+    BITCOIN_UPTIME.labels(fetched_blockchain).set(uptime)
+    
+    BITCOIN_BLOCKS.labels(fetched_blockchain).set(blockchaininfo["blocks"])
+    BITCOIN_PEERS.labels(fetched_blockchain).set(networkinfo["connections"])
     if "connections_in" in networkinfo:
-        BITCOIN_CONN_IN.set(networkinfo["connections_in"])
+        BITCOIN_CONN_IN.labels(fetched_blockchain).set(networkinfo["connections_in"])
     if "connections_out" in networkinfo:
-        BITCOIN_CONN_OUT.set(networkinfo["connections_out"])
-    BITCOIN_DIFFICULTY.set(blockchaininfo["difficulty"])
+        BITCOIN_CONN_OUT.labels(fetched_blockchain).set(networkinfo["connections_out"])
+    BITCOIN_DIFFICULTY.labels(fetched_blockchain).set(blockchaininfo["difficulty"])
 
-    BITCOIN_SERVER_VERSION.set(networkinfo["version"])
-    BITCOIN_PROTOCOL_VERSION.set(networkinfo["protocolversion"])
-    BITCOIN_SIZE_ON_DISK.set(blockchaininfo["size_on_disk"])
-    BITCOIN_VERIFICATION_PROGRESS.set(blockchaininfo["verificationprogress"])
+    BITCOIN_SERVER_VERSION.labels(fetched_blockchain).set(networkinfo["version"])
+    BITCOIN_PROTOCOL_VERSION.labels(fetched_blockchain).set(networkinfo["protocolversion"])
+    BITCOIN_SIZE_ON_DISK.labels(fetched_blockchain).set(blockchaininfo["size_on_disk"])
+    BITCOIN_VERIFICATION_PROGRESS.labels(fetched_blockchain).set(blockchaininfo["verificationprogress"])
 
     for smartfee in SMART_FEES:
         do_smartfee(smartfee)
@@ -299,47 +326,47 @@ def refresh_metrics() -> None:
 
     for ban in banned:
         BITCOIN_BAN_CREATED.labels(
-            address=ban["address"], reason=ban.get("ban_reason", "manually added")
+            chain=fetched_blockchain, address=ban["address"], reason=ban.get("ban_reason", "manually added")
         ).set(ban["ban_created"])
         BITCOIN_BANNED_UNTIL.labels(
-            address=ban["address"], reason=ban.get("ban_reason", "manually added")
+            chain=fetched_blockchain, address=ban["address"], reason=ban.get("ban_reason", "manually added")
         ).set(ban["banned_until"])
 
     if networkinfo["warnings"]:
-        BITCOIN_WARNINGS.inc()
+        BITCOIN_WARNINGS.labels(fetched_blockchain).inc()
 
-    BITCOIN_TXCOUNT.set(txstats["txcount"])
+    BITCOIN_TXCOUNT.labels(fetched_blockchain).set(txstats["txcount"])
 
-    BITCOIN_NUM_CHAINTIPS.set(chaintips)
+    BITCOIN_NUM_chain_TIPS.labels(fetched_blockchain).set(chaintips)
 
-    BITCOIN_MEMINFO_USED.set(meminfo["used"])
-    BITCOIN_MEMINFO_FREE.set(meminfo["free"])
-    BITCOIN_MEMINFO_TOTAL.set(meminfo["total"])
-    BITCOIN_MEMINFO_LOCKED.set(meminfo["locked"])
-    BITCOIN_MEMINFO_CHUNKS_USED.set(meminfo["chunks_used"])
-    BITCOIN_MEMINFO_CHUNKS_FREE.set(meminfo["chunks_free"])
+    BITCOIN_MEMINFO_USED.labels(fetched_blockchain).set(meminfo["used"])
+    BITCOIN_MEMINFO_FREE.labels(fetched_blockchain).set(meminfo["free"])
+    BITCOIN_MEMINFO_TOTAL.labels(fetched_blockchain).set(meminfo["total"])
+    BITCOIN_MEMINFO_LOCKED.labels(fetched_blockchain).set(meminfo["locked"])
+    BITCOIN_MEMINFO_CHUNKS_USED.labels(fetched_blockchain).set(meminfo["chunks_used"])
+    BITCOIN_MEMINFO_CHUNKS_FREE.labels(fetched_blockchain).set(meminfo["chunks_free"])
 
-    BITCOIN_MEMPOOL_BYTES.set(mempool["bytes"])
-    BITCOIN_MEMPOOL_SIZE.set(mempool["size"])
-    BITCOIN_MEMPOOL_USAGE.set(mempool["usage"])
+    BITCOIN_MEMPOOL_BYTES.labels(fetched_blockchain).set(mempool["bytes"])
+    BITCOIN_MEMPOOL_SIZE.labels(fetched_blockchain).set(mempool["size"])
+    BITCOIN_MEMPOOL_USAGE.labels(fetched_blockchain).set(mempool["usage"])
     if "unbroadcastcount" in mempool:
-        BITCOIN_MEMPOOL_UNBROADCAST.set(mempool["unbroadcastcount"])
+        BITCOIN_MEMPOOL_UNBROADCAST.labels(fetched_blockchain).set(mempool["unbroadcastcount"])
 
-    BITCOIN_TOTAL_BYTES_RECV.set(nettotals["totalbytesrecv"])
-    BITCOIN_TOTAL_BYTES_SENT.set(nettotals["totalbytessent"])
+    BITCOIN_TOTAL_BYTES_RECV.labels(fetched_blockchain).set(nettotals["totalbytesrecv"])
+    BITCOIN_TOTAL_BYTES_SENT.labels(fetched_blockchain).set(nettotals["totalbytessent"])
 
     if latest_blockstats is not None:
-        BITCOIN_LATEST_BLOCK_SIZE.set(latest_blockstats["total_size"])
-        BITCOIN_LATEST_BLOCK_TXS.set(latest_blockstats["txs"])
-        BITCOIN_LATEST_BLOCK_HEIGHT.set(latest_blockstats["height"])
-        BITCOIN_LATEST_BLOCK_WEIGHT.set(latest_blockstats["total_weight"])
-        BITCOIN_LATEST_BLOCK_INPUTS.set(latest_blockstats["ins"])
-        BITCOIN_LATEST_BLOCK_OUTPUTS.set(latest_blockstats["outs"])
-        BITCOIN_LATEST_BLOCK_VALUE.set(latest_blockstats["total_out"] / SATS_PER_COIN)
-        BITCOIN_LATEST_BLOCK_FEE.set(latest_blockstats["totalfee"] / SATS_PER_COIN)
+        BITCOIN_LATEST_BLOCK_SIZE.labels(fetched_blockchain).set(latest_blockstats["total_size"])
+        BITCOIN_LATEST_BLOCK_TXS.labels(fetched_blockchain).set(latest_blockstats["txs"])
+        BITCOIN_LATEST_BLOCK_HEIGHT.labels(fetched_blockchain).set(latest_blockstats["height"])
+        BITCOIN_LATEST_BLOCK_WEIGHT.labels(fetched_blockchain).set(latest_blockstats["total_weight"])
+        BITCOIN_LATEST_BLOCK_INPUTS.labels(fetched_blockchain).set(latest_blockstats["ins"])
+        BITCOIN_LATEST_BLOCK_OUTPUTS.labels(fetched_blockchain).set(latest_blockstats["outs"])
+        BITCOIN_LATEST_BLOCK_VALUE.labels(fetched_blockchain).set(latest_blockstats["total_out"] / SATS_PER_COIN)
+        BITCOIN_LATEST_BLOCK_FEE.labels(fetched_blockchain).set(latest_blockstats["totalfee"] / SATS_PER_COIN)
 
     # Subtract one because we don't want to count the "getrpcinfo" call itself
-    BITCOIN_RPC_ACTIVE.set(len(rpcinfo["active_commands"]) - 1)
+    BITCOIN_RPC_ACTIVE.labels(fetched_blockchain).set(len(rpcinfo["active_commands"]) - 1)
 
 
 def sigterm_handler(signal, frame) -> None:
@@ -366,6 +393,11 @@ def main():
 
     app = make_wsgi_app()
 
+    while not detect_chain():
+        logger.warning("Failed to detect chain, retrying in 5 seconds")
+        time.sleep(5)
+    logger.info(f"Chain detected - {fetched_blockchain}")
+
     last_refresh = datetime.fromtimestamp(0)
 
     def refresh_app(*args, **kwargs):
@@ -390,7 +422,7 @@ def main():
             sys.exit(1)
 
         duration = datetime.now() - process_start
-        PROCESS_TIME.inc(duration.total_seconds())
+        PROCESS_TIME.labels(fetched_blockchain).inc(duration.total_seconds())
         logger.info("Refresh took %s seconds", duration)
         last_refresh = process_start
 
