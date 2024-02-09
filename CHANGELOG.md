@@ -5,8 +5,10 @@ Changes to the project.
 
 ### Changed
 - Update docker base image to be fully qualifed for better podman support ([#25][pr-25])
+- Add metric for minimum fee ([#31][pr-31])
 
 [pr-25]: https://github.com/jvstein/bitcoin-prometheus-exporter/pull/25
+[pr-31]: https://github.com/jvstein/bitcoin-prometheus-exporter/pull/31
 
 
 ## [0.7.0] - 2022-01-14

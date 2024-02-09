@@ -63,6 +63,7 @@ BITCOIN_MEMPOOL_SIZE = Gauge(
     "bitcoin_mempool_size", "Number of unconfirmed transactions in mempool"
 )
 BITCOIN_MEMPOOL_USAGE = Gauge("bitcoin_mempool_usage", "Total memory usage for the mempool")
+BITCOIN_MEMPOOL_MINFEE = Gauge("bitcoin_mempool_minfee", "Minimum fee rate in BTC/kB for tx to be accepted in mempool")
 BITCOIN_MEMPOOL_UNBROADCAST = Gauge(
     "bitcoin_mempool_unbroadcast", "Number of transactions waiting for acknowledgment"
 )
@@ -322,6 +323,7 @@ def refresh_metrics() -> None:
     BITCOIN_MEMPOOL_BYTES.set(mempool["bytes"])
     BITCOIN_MEMPOOL_SIZE.set(mempool["size"])
     BITCOIN_MEMPOOL_USAGE.set(mempool["usage"])
+    BITCOIN_MEMPOOL_MINFEE.set(mempool["mempoolminfee"])
     if "unbroadcastcount" in mempool:
         BITCOIN_MEMPOOL_UNBROADCAST.set(mempool["unbroadcastcount"])
 
