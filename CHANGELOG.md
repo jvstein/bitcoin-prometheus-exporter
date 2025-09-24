@@ -3,6 +3,8 @@ Changes to the project.
 
 ## [Unreleased]
 
+## [0.9.0] - 2025-09-24
+
 ### Changed
 - Exporter now exits cleanly on SIGTERM. SIGINT now exits with a non-zero code. ([#38][pr-38])
 - Username and password are now properly handled when they contain URL reserved characters. ([#40][issue-40])
@@ -190,7 +192,8 @@ as-is in the first commit.
 
 [python-bitcoinlib]: https://github.com/petertodd/python-bitcoinlib
 
-[Unreleased]: https://github.com/jvstein/bitcoin-prometheus-exporter/compare/v0.8.0...HEAD
+[Unreleased]: https://github.com/jvstein/bitcoin-prometheus-exporter/compare/v0.9.0...HEAD
+[0.9.0]: https://github.com/jvstein/bitcoin-prometheus-exporter/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/jvstein/bitcoin-prometheus-exporter/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/jvstein/bitcoin-prometheus-exporter/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/jvstein/bitcoin-prometheus-exporter/compare/v0.5.0...v0.6.0

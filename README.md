@@ -24,7 +24,7 @@ docker run \
     -e BITCOIN_RPC_HOST=bitcoin-node \
     -e BITCOIN_RPC_USER=alice \
     -e BITCOIN_RPC_PASSWORD=DONT_USE_THIS_YOU_WILL_GET_ROBBED_8ak1gI25KFTvjovL3gAM967mies3E= \
-    jvstein/bitcoin-prometheus-exporter:v0.8.0
+    jvstein/bitcoin-prometheus-exporter:v0.9.0
 ```
 
 ## Basic Testing
