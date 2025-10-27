@@ -3,6 +3,12 @@ Changes to the project.
 
 ## [Unreleased]
 
+### Fixed
+- Fix log level used for exception ([#42][issue-42])
+
+[issue-42]: https://github.com/jvstein/bitcoin-prometheus-exporter/issues/42
+
+
 ## [0.9.0] - 2025-09-24
 
 ### Changed

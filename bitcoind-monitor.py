@@ -419,13 +419,13 @@ def main():
         try:
             refresh_metrics()
         except riprova.exceptions.RetryError as e:
-            logger.error("Refresh failed during retry. Cause: " + str(e))
+            logger.exception("Refresh failed during retry.")
             exception_count(e)
         except JSONRPCError as e:
-            logger.debug("Bitcoin RPC error refresh", exc_info=True)
+            logger.exception("Bitcoin RPC error refresh", exc_info=True)
             exception_count(e)
         except json.decoder.JSONDecodeError as e:
-            logger.error("RPC call did not return JSON. Bad credentials? " + str(e))
+            logger.exception("RPC call did not return JSON. Bad credentials?")
             sys.exit(1)
 
         duration = datetime.now() - process_start
